@@ -41,5 +41,5 @@ export github_key=$github_key
 export github_key_pub=$github_key_pub
 export bucket_dir=$BUCKET_DIR
 cd TPU-VM-setup
-bash main.sh
+bash setup_main.sh
 EOF
