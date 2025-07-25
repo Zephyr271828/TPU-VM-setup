@@ -15,7 +15,6 @@ curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share
 echo "Installing gcsfuse..."
 sudo apt-get update
 sudo apt-get install -y gcsfuse
-sudo apt autoremove -y
 
 # Create mount directory
 sudo mkdir -p "$bucket_dir"
