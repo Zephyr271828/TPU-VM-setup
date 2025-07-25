@@ -14,4 +14,7 @@ bash setup_ssh.sh
 # === Podrun Setup ===
 bash setup_podrun.sh
 
+# === fms setup ===
+bash setup_conda2.sh
+
 
