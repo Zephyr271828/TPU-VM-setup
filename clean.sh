@@ -27,6 +27,7 @@ if mount | grep "$BUCKET_DIR"; then
   echo "unmounted $BUCKET_DIR"
 fi
 rm -rf "$BUCKET_DIR"
+sudo apt-get remove -y gcsfuse
 
 echo "🔹 Cleaning Conda..."
 rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
