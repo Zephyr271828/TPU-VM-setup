@@ -10,8 +10,7 @@ rm ~/miniconda3/miniconda.sh
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda init
-
-exec "$SHELL"
+source ~/miniconda3/etc/profile.d/conda.sh
 
 echo "Setting custom Conda paths..."
 mkdir -p ~/conda_envs
