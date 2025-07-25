@@ -13,13 +13,12 @@ conda init
 
 echo "Setting custom Conda paths..."
 mkdir -p ~/conda_envs
-export CONDA_ENVS_PATH=~/conda_envs
 mkdir -p ~/conda_pkgs
-export CONDA_PKGS_PATH=~/conda_pkgs
+conda config --set pkgs_dirs ~/conda_pkgs
+conda config --set envs_dirs ~/conda_envs
 
 echo "Accept terms of service..."
-conda tos accept --override-channels https://repo.anaconda.com/pkgs/main
-conda tos accept --override-channels https://repo.anaconda.com/pkgs/r
+conda config --set accept_channel_terms yes
 
 echo "Creating 'fms' Conda environment..."
 conda create -p ~/conda_envs/fms python=3.10 -y
