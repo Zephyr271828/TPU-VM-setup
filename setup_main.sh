@@ -15,7 +15,12 @@ bash setup_ssh.sh
 bash setup_podrun.sh
 
 # === multihost conda setup ===
-~/podrun -i -- bash setup_conda.sh
-~/podrun -i -- bash setup_conda2.sh
+~/podrun -i -- bash -c '
+cd ~
+git clone https://github.com/Zephyr271828/TPU-VM-setup.git
+cd TPU-VM-setup
+bash setup_conda.sh
+bash setup_conda2.sh
+'
 
 

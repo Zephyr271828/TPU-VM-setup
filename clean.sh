@@ -38,4 +38,8 @@ rm -rf podrun podips.txt
 echo "🔹 Cleaning ssh keys..."
 rm -rf ~/.ssh/id*
 
+echo "🔹 Cleaning /etc/export..."
+sudo sed -i '/\/nfs_share/d' /etc/exports
+sudo exportfs -ra
+
 EOF
