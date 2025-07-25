@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-
+source ~/miniconda3/etc/profile.d/conda.sh
 
 echo "Creating 'fms' Conda environment..."
 conda create -p ~/conda_envs/fms python=3.10 -y
