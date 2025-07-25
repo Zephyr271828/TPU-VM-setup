@@ -1,14 +1,16 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # === Install podrun ===
 echo "Installing podrun..."
 wget https://raw.githubusercontent.com/ayaka14732/llama-2-jax/18e9625f7316271e4c0ad9dea233cfe23c400c9b/podrun
 chmod +x podrun
 
 # === Read host IPs ===
-read -p "Enter your host1 internal ip:" host1_ip
-read -p "Enter your host2 internal ip:" host2_ip
-read -p "Enter your host3 internal ip:" host3_ip
+# read -p "Enter your host1 internal ip:" host1_ip
+# read -p "Enter your host2 internal ip:" host2_ip
+# read -p "Enter your host3 internal ip:" host3_ip
 
 # === Save IPs to file ===
 echo -e "\n$host1_ip\n$host2_ip\n$host3_ip" >> ~/podips.txt

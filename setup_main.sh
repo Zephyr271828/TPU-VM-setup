@@ -1,8 +1,6 @@
 #!/bin/bash
 
-
-set -e 
-
+set -euo pipefail
 
 # === Conda Setup ===
 bash setup_conda.sh
@@ -11,9 +9,9 @@ bash setup_conda.sh
 bash setup_gcsfuse.sh
 
 # === SSH Setup ===
-source keys.sh
 bash setup_ssh.sh
 
 # === Podrun Setup ===
 bash setup_podrun.sh
+
 

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 # Enable Google Cloud's package repository
 echo "Adding gcsfuse repo..."
 echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt gcsfuse-bullseye main" | \
@@ -19,11 +21,11 @@ sudo apt-get install -y gcsfuse
 read -p "enter your bucket name:" bucket_name
 
 # Create mount directory
-mkdir -p ~/gcs-bucket
+mkdir -p $BUCKET_DIR
 
 # Mount the bucket
-echo "Mounting bucket '$bucket_name' to ~/gcs-bucket ..."
-gcsfuse --dir-mode=777 --file-mode=777 "$bucket_name" ~/gcs-bucket
+echo "Mounting bucket '$bucket_name' to $BUCKET_DIR ..."
+gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 "$bucket_name" $BUCKET_DIR
 
 echo "✅ Mounted successfully. Contents:"
-ls -la ~/gcs-bucket
+ls -la $BUCKET_DIR
