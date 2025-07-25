@@ -13,9 +13,9 @@ conda init
 
 echo "Setting custom Conda paths..."
 mkdir -p ~/conda_envs
+export CONDA_ENVS_PATH=~/conda_envs
 mkdir -p ~/conda_pkgs
-conda config --set pkgs_dirs ~/conda_pkgs
-conda config --set envs_dirs ~/conda_envs
+export CONDA_PKGS_PATH=~/conda_pkgs
 
 echo "Accept terms of service..."
 conda config --set accept_channel_terms yes
