@@ -17,6 +17,7 @@ export CONDA_ENVS_PATH=~/conda_envs
 mkdir -p ~/conda_pkgs
 export CONDA_PKGS_PATH=~/conda_pkgs
 
+echo "Accept terms of service..."
 conda tos accept --override-channels https://repo.anaconda.com/pkgs/main
 conda tos accept --override-channels https://repo.anaconda.com/pkgs/r
 
