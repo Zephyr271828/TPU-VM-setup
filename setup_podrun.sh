@@ -8,6 +8,7 @@ cd /home/zephyr
 echo "Installing podrun..."
 wget https://raw.githubusercontent.com/ayaka14732/llama-2-jax/18e9625f7316271e4c0ad9dea233cfe23c400c9b/podrun
 chmod +x podrun
+pip install fabric
 
 # === Read host IPs ===
 # read -p "Enter your host1 internal ip:" host1_ip
