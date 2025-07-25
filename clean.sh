@@ -19,7 +19,7 @@ done
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null zephyr@${external_ips[0]} << EOF
 
 echo "🔹 Cleaning setup scripts..."
-rm -rf ~/TPU-VM-setup
+~/podrun -i -- rm -rf ~/TPU-VM-setup
 
 echo "🔹 Unmounting GCSFuse from $BUCKET_DIR..."
 if mount | grep "$BUCKET_DIR"; then
@@ -30,7 +30,7 @@ rm -rf "$BUCKET_DIR"
 sudo apt-get remove -y gcsfuse
 
 echo "🔹 Cleaning Conda..."
-rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
+~/podrun -i -- rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
 
 echo "🔹 Cleaning podrun..."
 rm -rf podrun podips.txt

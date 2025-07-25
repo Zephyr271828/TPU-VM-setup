@@ -6,6 +6,7 @@ set -euo pipefail
 bash setup_conda.sh
 
 # === GCSFuse Setup ===
+# sleep 120
 bash setup_gcsfuse.sh
 
 # === SSH Setup ===

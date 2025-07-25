@@ -2,6 +2,9 @@
 
 set -euo pipefail
 
+sudo systemctl stop unattended-upgrades
+sudo systemctl disable unattended-upgrades
+
 # Enable Google Cloud's package repository
 echo "Adding gcsfuse repo..."
 export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
