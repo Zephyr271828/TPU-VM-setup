@@ -46,31 +46,32 @@ echo "$export_line"
 sudo exportfs -a
 sudo systemctl restart nfs-kernel-server
 
+# NO NEED TO USE NFS SHARE
 # === Mount on remote hosts ===
-~/podrun -- sudo mkdir -p /nfs_share
-~/podrun -- sudo mount 172.21.12.2:/nfs_share /nfs_share
-~/podrun -i -- ln -sf /nfs_share ~/nfs_share
+# ~/podrun -- sudo mkdir -p /nfs_share
+# ~/podrun -- sudo mount 172.21.12.2:/nfs_share /nfs_share
+# ~/podrun -i -- ln -sf /nfs_share ~/nfs_share
 
-touch ~/nfs_share/meow
-~/podrun -i -- ls -la ~/nfs_share/meow
+# touch ~/nfs_share/meow
+# ~/podrun -i -- ls -la ~/nfs_share/meow
 
-mkdir -p ~/nfs_share
-cat <<EOF >> ~/nfs_share/setup.sh
-#!/bin/bash
-set -euo pipefail
+# mkdir -p ~/nfs_share
+# cat <<EOF >> ~/nfs_share/setup.sh
+# #!/bin/bash
+# set -euo pipefail
 
-export DEBIAN_FRONTEND=noninteractive
+# export DEBIAN_FRONTEND=noninteractive
 
-sudo apt-get update -y -qq
-sudo apt-get upgrade -y -qq
-sudo apt-get install -y -qq golang neofetch zsh byobu
-sudo apt-get install -y -qq software-properties-common
-sudo add-apt-repository -y ppa:deadsnakes/ppa
-EOF
+# sudo apt-get update -y -qq
+# sudo apt-get upgrade -y -qq
+# sudo apt-get install -y -qq golang neofetch zsh byobu
+# sudo apt-get install -y -qq software-properties-common
+# sudo add-apt-repository -y ppa:deadsnakes/ppa
+# EOF
 
-cat setup_conda.sh >> ~/nfs_share/setup.sh
-cat setup_gcsfuse.sh >> ~/nfs_share/setup.sh
-chmod +x ~/nfs_share/setup.sh
+# cat setup_conda.sh >> ~/nfs_share/setup.sh
+# cat setup_gcsfuse.sh >> ~/nfs_share/setup.sh
+# chmod +x ~/nfs_share/setup.sh
 
-# === Run setup on remote nodes ===
-~/podrun -i ~/nfs_share/setup.sh
+# # === Run setup on remote nodes ===
+# ~/podrun -i ~/nfs_share/setup.sh

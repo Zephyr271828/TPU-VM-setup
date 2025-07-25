@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+
+
 echo "Creating 'fms' Conda environment..."
 conda create -p ~/conda_envs/fms python=3.10 -y
 
