@@ -17,11 +17,11 @@ sudo apt-get update
 sudo apt-get install -y gcsfuse
 
 # Create mount directory
-mkdir -p $BUCKET_DIR
+mkdir -p $bucket_dir
 
 # Mount the bucket
-echo "Mounting bucket '$bucket_name' to $BUCKET_DIR ..."
-gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 "$bucket_name" $BUCKET_DIR
+echo "Mounting bucket '$bucket_name' to $bucket_dir ..."
+gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 "$bucket_name" $bucket_dir
 
 echo "✅ Mounted successfully. Contents:"
-ls -la $BUCKET_DIR
+ls -la $bucket_dir
