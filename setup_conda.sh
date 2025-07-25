@@ -18,7 +18,8 @@ mkdir -p ~/conda_pkgs
 export CONDA_PKGS_PATH=~/conda_pkgs
 
 echo "Accept terms of service..."
-conda config --set accept_channel_terms yes
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 
 echo "Creating 'fms' Conda environment..."
 conda create -p ~/conda_envs/fms python=3.10 -y

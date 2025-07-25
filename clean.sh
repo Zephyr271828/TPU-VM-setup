@@ -18,18 +18,16 @@ done
 
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null zephyr@${external_ips[0]} << EOF
 
-# clean set up scripts
+echo "🔹 Cleaning setup scripts..."
 rm -rf ~/TPU-VM-setup
 
-# clean gcsfuse
-echo $BUCKET_DIR
-sudo fusermount -u $BUCKET_DIR
-rm -rf $BUCKET_DIR
+echo "🔹 Unmounting GCSFuse from $BUCKET_DIR..."
+if mountpoint -q "$BUCKET_DIR"; then
+  sudo fusermount -u "$BUCKET_DIR" || sudo umount -l "$BUCKET_DIR"
+fi
+rm -rf "$BUCKET_DIR"
 
-# clean conda
-source ~/miniconda3/etc/profile.d/conda.sh
-rm -rf ~/conda_envs
-rm -rf ~/conda_pkgs
-rm -rf ~/miniconda3
+echo "🔹 Cleaning Conda..."
+rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
 
 EOF
