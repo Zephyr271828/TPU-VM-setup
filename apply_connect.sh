@@ -36,10 +36,10 @@ export host1_ip=${internal_ips[1]}
 export host2_ip=${internal_ips[2]}
 export host3_ip=${internal_ips[3]}
 
-export tpu_key=$tpu_key
-export tpu_key_pub=$tpu_key_pub
-export github_key=$github_key
-export github_key_pub=$github_key_pub
+export tpu_key="$tpu_key"
+export tpu_key_pub="$tpu_key_pub"
+export github_key="$github_key"
+export github_key_pub="$github_key_pub"
 
 export bucket_name=$BUCKET_NAME
 export bucket_dir=$BUCKET_DIR

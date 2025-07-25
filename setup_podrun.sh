@@ -16,7 +16,7 @@ pip install fabric
 # read -p "Enter your host3 internal ip:" host3_ip
 
 # === Save IPs to file ===
-echo -e "\n$host1_ip\n$host2_ip\n$host3_ip" >> ~/podips.txt
+echo -e "$host1_ip\n$host2_ip\n$host3_ip" >> ~/podips.txt
 echo "Saved pod IPs to ~/podips.txt"
 
 # === Update and install packages on remote hosts ===

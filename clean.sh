@@ -32,4 +32,10 @@ sudo apt-get remove -y gcsfuse
 echo "🔹 Cleaning Conda..."
 rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
 
+echo "🔹 Cleaning podrun..."
+rm -rf podrun podips.txt
+
+echo "🔹 Cleaning ssh keys..."
+rm -rf ~/.ssh/id*
+
 EOF
