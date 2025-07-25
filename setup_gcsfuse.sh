@@ -18,11 +18,11 @@ sudo apt-get install -y gcsfuse
 sudo apt autoremove -y
 
 # Create mount directory
-sudo mkdir -p $bucket_dir
+sudo mkdir -p "$bucket_dir"
 
 # Mount the bucket
 echo "Mounting bucket '$bucket_name' to $bucket_dir ..."
-gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 "$bucket_name" $bucket_dir
+gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 "$bucket_name" "$bucket_dir"
 
 echo "✅ Mounted successfully. Contents:"
-ls -la $bucket_dir
+ls -la "$bucket_dir"

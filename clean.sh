@@ -22,8 +22,9 @@ echo "🔹 Cleaning setup scripts..."
 rm -rf ~/TPU-VM-setup
 
 echo "🔹 Unmounting GCSFuse from $BUCKET_DIR..."
-if mountpoint -q "$BUCKET_DIR"; then
+if mount | grep "$BUCKET_DIR"; then
   sudo fusermount -u "$BUCKET_DIR" || sudo umount -l "$BUCKET_DIR"
+  echo "unmounted $BUCKET_DIR"
 fi
 rm -rf "$BUCKET_DIR"
 
