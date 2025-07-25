@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+cd /home/zephyr
+
 # === Install podrun ===
 echo "Installing podrun..."
 wget https://raw.githubusercontent.com/ayaka14732/llama-2-jax/18e9625f7316271e4c0ad9dea233cfe23c400c9b/podrun

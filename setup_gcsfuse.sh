@@ -21,6 +21,7 @@ mkdir -p "$bucket_dir"
 
 # Mount the bucket
 echo "Mounting bucket '$bucket_name' to $bucket_dir ..."
+sleep 1
 gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 "$bucket_name" "$bucket_dir"
 
 echo "✅ Mounted successfully. Contents:"
