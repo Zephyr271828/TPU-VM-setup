@@ -2,14 +2,14 @@
 
 set -euo pipefail
 
-# Import the GPG key
-echo "Add GPG key non-interactively"
-curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
-
 # Enable Google Cloud's package repository
 echo "Adding gcsfuse repo..."
-echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt gcsfuse-bullseye main" | \
-  sudo tee /etc/apt/sources.list.d/gcsfuse.list
+export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt $GCSFUSE_REPO main" | sudo tee /etc/apt/sources.list.d/gcsfuse.list
+
+# Import the GPG key
+echo "Add GPG key non-interactively"
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.asc
 
 # Update package list and install gcsfuse
 echo "Installing gcsfuse..."
