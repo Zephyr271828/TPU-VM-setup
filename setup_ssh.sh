@@ -4,7 +4,7 @@ set -euo pipefail
 
 echo "Setting up SSH keys..."
 
-source keys.sh
+# source keys.sh
 
 echo "$tpu_key" > ~/.ssh/id_rsa
 chmod 600 ~/.ssh/id_rsa
