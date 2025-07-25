@@ -17,7 +17,7 @@ sudo apt-get update
 sudo apt-get install -y gcsfuse
 
 # Create mount directory
-mkdir -p $bucket_dir
+sudo mkdir -p $bucket_dir
 
 # Mount the bucket
 echo "Mounting bucket '$bucket_name' to $bucket_dir ..."
