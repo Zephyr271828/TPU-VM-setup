@@ -24,6 +24,7 @@ sudo fusermount -u $BUCKET_DIR
 rm -rf $BUCKET_DIR
 
 # clean conda
+source ~/miniconda3/etc/profile.d/conda.sh
 conda env list | awk '{print \$1}' | grep -vE '^(#|base$)' | xargs -n1 conda env remove -n
 rm -rf ~/miniconda3
 
