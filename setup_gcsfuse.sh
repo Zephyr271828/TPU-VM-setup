@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-sudo systemctl stop unattended-upgrades
-sudo systemctl disable unattended-upgrades
+# sudo systemctl stop unattended-upgrades
+# sudo systemctl disable unattended-upgrades
 
 # Enable Google Cloud's package repository
 echo "Adding gcsfuse repo..."

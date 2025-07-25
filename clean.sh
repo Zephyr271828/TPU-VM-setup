@@ -30,7 +30,7 @@ rm -rf "$BUCKET_DIR"
 sudo apt-get remove -y gcsfuse
 
 echo "🔹 Cleaning Conda..."
-~/podrun -i -- rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
+rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
 
 echo "🔹 Cleaning podrun..."
 rm -rf podrun podips.txt
