@@ -16,9 +16,6 @@ echo "Installing gcsfuse..."
 sudo apt-get update
 sudo apt-get install -y gcsfuse
 
-# Prompt for bucket name
-read -p "enter your bucket name:" bucket_name
-
 # Create mount directory
 mkdir -p $BUCKET_DIR
 

@@ -30,16 +30,20 @@ done
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null zephyr@${external_ips[0]} << EOF
 cd ~
 git clone https://github.com/Zephyr271828/TPU-VM-setup.git
+
 export host0_ip=${internal_ips[0]}
 export host1_ip=${internal_ips[1]}
 export host2_ip=${internal_ips[2]}
 export host3_ip=${internal_ips[3]}
-export bucket_name=$BUCKET_NAME
+
 export tpu_key=$tpu_key
 export tpu_key_pub=$tpu_key_pub
 export github_key=$github_key
 export github_key_pub=$github_key_pub
+
+export bucket_name=$BUCKET_NAME
 export bucket_dir=$BUCKET_DIR
+
 cd TPU-VM-setup
 bash setup_main.sh
 EOF
