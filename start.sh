@@ -25,7 +25,6 @@ gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   export bucket_name=$BUCKET_NAME
   export bucket_dir=$BUCKET_DIR
   bash setup_gcsfuse.sh
-
-  bash run_command.sh
   "
 
+bash run_command.sh
