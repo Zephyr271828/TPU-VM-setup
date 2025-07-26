@@ -8,6 +8,5 @@ gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   --ssh-key-file='~/.ssh/id_rsa' \
   --worker=all \
   --command "
-  sudo pkill -f python
   bash ~/gcs-bucket/pruning/fms-grad-accum/scripts/finetuning.sh
   "

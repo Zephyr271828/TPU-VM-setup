@@ -2,25 +2,29 @@
 
 source config.sh
 
-until \
-    gcloud alpha compute tpus tpu-vm create $TPU_NAME \
-    --zone=$ZONE \
-    --accelerator-type=$ACCELERATOR \
-    --version=$VERSION \
-    --preemptible; \
-do : ; done
+gcloud alpha compute tpus tpu-vm list --zone=$ZONE --format="value(name)" | grep -q "^$TPU_NAME$"
+if [ $? -ne 0 ]; then
+  until \
+      gcloud alpha compute tpus tpu-vm create $TPU_NAME \
+      --zone=$ZONE \
+      --accelerator-type=$ACCELERATOR \
+      --version=$VERSION \
+      --preemptible; \
+  do : ; done
+fi
 
+gcloud alpha compute tpus tpu-vm scp setup_conda.sh $TPU_NAME:~/ \
+  --zone=$ZONE --ssh-key-file='~/.ssh/id_rsa' --worker=all   
+gcloud alpha compute tpus tpu-vm scp setup_gcsfuse.sh $TPU_NAME:~/ \
+  --zone=$ZONE --ssh-key-file='~/.ssh/id_rsa' --worker=all
 gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   --zone=$ZONE \
   --ssh-key-file='~/.ssh/id_rsa' \
   --worker=all \
   --command "
-  cd ~
-  git clone -b main https://github.com/Zephyr271828/TPU-VM-setup.git
-  cd TPU-VM-setup
-  git pull origin main
-
   bash setup_conda.sh
+
+  sleep 60
 
   export bucket_name=$BUCKET_NAME
   export bucket_dir=$BUCKET_DIR

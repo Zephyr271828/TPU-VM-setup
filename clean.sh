@@ -10,7 +10,7 @@ gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   --worker=all \
   --command "
   echo '🔹 Cleaning setup scripts...'
-  rm -rf ~/TPU-VM-setup
+  rm -rf ~/setup*
 
   echo '🔹 Unmounting GCSFuse from $BUCKET_DIR...'
   if mount | grep '$BUCKET_DIR'; then
