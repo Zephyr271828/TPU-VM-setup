@@ -4,42 +4,22 @@
 
 source config.sh
 
-readarray -t ip_lines < <(gcloud alpha compute tpus tpu-vm describe $TPU_NAME --zone=$ZONE \
-  | awk '/externalIp:/{eip=$2} /ipAddress:/{print eip, $2}')
+gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
+  --zone=$ZONE \
+  --ssh-key-file='~/.ssh/id_rsa' \
+  --worker=all \
+  --command "
+  echo '🔹 Cleaning setup scripts...'
+  rm -rf ~/TPU-VM-setup
 
-# Split into arrays
-external_ips=()
-internal_ips=()
-for line in "${ip_lines[@]}"; do
-  read -r ext int <<< "$line"
-  external_ips+=("$ext")
-  internal_ips+=("$int")
-done
+  echo '🔹 Unmounting GCSFuse from $BUCKET_DIR...'
+  if mount | grep '$BUCKET_DIR'; then
+    sudo fusermount -u '$BUCKET_DIR' || sudo umount -l '$BUCKET_DIR'
+    echo 'unmounted $BUCKET_DIR'
+  fi
+  rm -rf '$BUCKET_DIR'
+  sudo apt-get remove -y gcsfuse
 
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null zephyr@${external_ips[0]} << EOF
-
-echo "🔹 Cleaning setup scripts..."
-~/podrun -i -- rm -rf ~/TPU-VM-setup
-
-echo "🔹 Unmounting GCSFuse from $BUCKET_DIR..."
-if mount | grep "$BUCKET_DIR"; then
-  sudo fusermount -u "$BUCKET_DIR" || sudo umount -l "$BUCKET_DIR"
-  echo "unmounted $BUCKET_DIR"
-fi
-rm -rf "$BUCKET_DIR"
-sudo apt-get remove -y gcsfuse
-
-echo "🔹 Cleaning Conda..."
-rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
-
-echo "🔹 Cleaning podrun..."
-rm -rf podrun podips.txt
-
-echo "🔹 Cleaning ssh keys..."
-rm -rf ~/.ssh/id*
-
-echo "🔹 Cleaning /etc/export..."
-sudo sed -i '/\/nfs_share/d' /etc/exports
-sudo exportfs -ra
-
-EOF
+  echo '🔹 Cleaning Conda...'
+  rm -rf ~/conda_envs ~/conda_pkgs ~/miniconda3
+  "
