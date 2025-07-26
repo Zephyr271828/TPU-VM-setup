@@ -2,13 +2,13 @@
 
 source config.sh
 
-# until \
-#     gcloud alpha compute tpus tpu-vm create $TPU_NAME \
-#     --zone=$ZONE \
-#     --accelerator-type=$ACCELERATOR \
-#     --version=$VERSION \
-#     --preemptible; \
-# do : ; done
+until \
+    gcloud alpha compute tpus tpu-vm create $TPU_NAME \
+    --zone=$ZONE \
+    --accelerator-type=$ACCELERATOR \
+    --version=$VERSION \
+    --preemptible; \
+do : ; done
 
 gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   --zone=$ZONE \
@@ -20,12 +20,12 @@ gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   cd TPU-VM-setup
   git pull origin main
 
-  # bash setup_conda.sh
+  bash setup_conda.sh
 
-  # export bucket_name=$BUCKET_NAME
-  # export bucket_dir=$BUCKET_DIR
-  # bash setup_gcsfuse.sh
+  export bucket_name=$BUCKET_NAME
+  export bucket_dir=$BUCKET_DIR
+  bash setup_gcsfuse.sh
 
-  bash start.sh
+  bash run_command.sh
   "
 
