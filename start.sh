@@ -31,4 +31,6 @@ gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   bash setup_gcsfuse.sh
   "
 
+sleep 60
+
 bash run_command.sh

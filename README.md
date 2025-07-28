@@ -17,3 +17,9 @@ Run `start.sh`, which does 3 things:
 - if the vm has not been created, request 1
 - do conda and gcsfuse set up. If you prefer other package manager, feel free to replace `setup_conda.sh` with your own version.
 - execute the desired training command on all hosts. Replace with your own script.
+
+## Endless Running
+```bash
+mkdir -p logs
+nohup bash loop.sh > logs/loop_$(date +'%Y-%m-%d_%H-%M-%S').log 2>&1 &
+```
