@@ -8,36 +8,51 @@ export bucket_name=$BUCKET_NAME
 export bucket_dir=$BUCKET_DIR
 export GCSFUSE_REPO=gcsfuse-`lsb_release -c -s`
 
-gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
-  --zone=$ZONE \
-  --ssh-key-file='~/.ssh/id_rsa' \
-  --worker=all \
-  --command "
+MAX_RETRIES=5
+RETRY_DELAY=10
 
-    # sudo systemctl stop unattended-upgrades
-    # sudo systemctl disable unattended-upgrades
+run_setup_for_worker() {
+  local worker=$1
+  local attempt=0
 
-    # Enable Google Cloud package repository
-    echo 'Adding gcsfuse repo...'
-    echo 'deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt $GCSFUSE_REPO main' | sudo tee /etc/apt/sources.list.d/gcsfuse.list
+  while (( attempt < MAX_RETRIES )); do
+    echo "🔁 Worker $worker attempt $((attempt+1))/$MAX_RETRIES"
 
-    # Import the GPG key
-    echo 'Add GPG key non-interactively'
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.asc
+    if gcloud alpha compute tpus tpu-vm ssh "$TPU_NAME" \
+      --zone="$ZONE" \
+      --ssh-key-file="$HOME/.ssh/id_rsa" \
+      --worker="$worker" \
+      --command "
+        set -euo pipefail
+        echo 'Adding gcsfuse repo...'
+        echo 'deb [signed-by=/usr/share/keyrings/cloud.google.asc] https://packages.cloud.google.com/apt $GCSFUSE_REPO main' | sudo tee /etc/apt/sources.list.d/gcsfuse.list
 
-    # Update package list and install gcsfuse
-    echo 'Installing gcsfuse...'
-    sudo apt-get update
-    sudo apt-get install -y gcsfuse
+        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.asc >/dev/null
 
-    # Create mount directory
-    mkdir -p '$bucket_dir'
+        sudo apt-get update -y && sudo apt-get install -y gcsfuse
 
-    # Mount the bucket
-    echo 'Mounting bucket $bucket_name to $bucket_dir ...'
-    sleep 1
-    gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 '$bucket_name' '$bucket_dir'
+        mkdir -p '$bucket_dir'
+        gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 '$bucket_name' '$bucket_dir'
+        ls -la '$bucket_dir'
+      "; then
+      echo "✅ Worker $worker success"
+      return 0
+    else
+      echo "❌ Worker $worker failed attempt $((attempt+1))"
+      sleep $RETRY_DELAY
+      ((attempt++))
+    fi
+  done
 
-    echo '✅ Mounted successfully. Contents:'
-    ls -la '$bucket_dir'
-    "
+  echo "❌ Worker $worker failed after $MAX_RETRIES attempts."
+  return 1
+}
+
+# Run all workers concurrently
+for ((worker=0; worker<NUM_WORKERS; worker++)); do
+  run_setup_for_worker "$worker" &
+done
+
+# Wait for all background jobs to finish
+wait
+echo "🏁 All worker setup processes completed."

@@ -30,5 +30,7 @@ nohup gcloud alpha compute tpus tpu-vm ssh $TPU_NAME \
   cd ~/maxtext
   mkdir -p logs
   export TPU_PREFIX=llm-pruning-v6e
-  bash scripts/finetune_llama3.1_4b_width.sh" \
+  bash scripts/finetune_llama3.1_4b_width_50B.sh
+  # bash scripts/finetune_llama3.1_4b_width_200B.sh
+  " \
   > "$LOG_FILE" 2>&1 &

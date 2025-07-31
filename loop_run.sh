@@ -2,6 +2,9 @@
 
 # === CONFIGURATION ===
 source config.sh
+LOG_FILE="tpu_monitor.log"
+
+PID_FILE="tpu_monitor.pid"
 SLEEP_INTERVAL=60
 RECREATE_TIMEOUT=900  # Timeout in seconds (e.g., 10 minutes)
 
@@ -23,7 +26,7 @@ get_external_ip() {
 
 recreate_tpu() {
   echo "$(timestamp) [INFO] Starting TPU recreate process..."
-
+  
   if gcloud alpha compute tpus tpu-vm describe "$TPU_NAME" --zone="$ZONE" &>/dev/null; then
     echo "$(timestamp) [INFO] TPU VM exists. Running delete.sh..."
     bash delete.sh
@@ -31,7 +34,8 @@ recreate_tpu() {
     echo "$(timestamp) [INFO] TPU VM does not exist. Skipping deletion."
   fi
 
-  if timeout "$RECREATE_TIMEOUT" bash start.sh; then
+  START_LOG="tpu_start_$(timestamp).log"
+  if timeout "$RECREATE_TIMEOUT" bash start.sh >"$START_LOG" 2>&1; then
     echo "$(timestamp) [INFO] TPU recreate completed within timeout."
   else
     echo "$(timestamp) [ERROR] TPU recreate timed out after ${RECREATE_TIMEOUT}s. Skipping for now."
@@ -39,7 +43,7 @@ recreate_tpu() {
 }
 
 # === RUN LOOP IN BACKGROUND ===
-{
+run_monitor_loop() {
   echo "$(timestamp) [INFO] Starting TPU monitor for $TPU_NAME in zone $ZONE..."
 
   while true; do
@@ -60,3 +64,8 @@ recreate_tpu() {
     sleep "$SLEEP_INTERVAL"
   done
 }
+
+run_monitor_loop >>"$LOG_FILE" 2>&1 &
+
+echo $! > "$PID_FILE"
+echo "$(timestamp) [INFO] TPU monitor started in background (PID=$!) — logging to $LOG_FILE"
