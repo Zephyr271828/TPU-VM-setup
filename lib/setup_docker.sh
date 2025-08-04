@@ -14,8 +14,8 @@ setup_docker_worker() {
         sudo docker pull yx3038/maxtext_base_image:latest
         sudo docker run \
             --privileged \
-            -v /home/zephyr:/home/zephyr \
-            -w /home/zephyr/maxtext \
+            -v $WORK_DIR:$WORK_DIR \
+            -w $WORK_DIR/maxtext \
             yx3038/maxtext_base_image:latest bash -c \
             \"pip install flax\"
         "

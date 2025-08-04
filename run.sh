@@ -12,6 +12,7 @@ required_vars=(
     "NUM_WORKERS" 
     "TPU_NAME" 
     "VERSION"
+    "WORK_DIR"
     "ZONE" 
 )
 for var in "${required_vars[@]}"; do
@@ -43,7 +44,7 @@ if [ "$NOHUP_MODE" = true ]; then
     run_job_steps >> "jobs/$JOB_NAME/run.log" 2>&1 &
     echo $! > jobs/$JOB_NAME/pid.txt
     echo "[INFO] Job launched in background. Logs at jobs/$JOB_NAME/run.log"
-    echo "[INFO] Run 'kill -9 $(cat jobs/$JOB_NAME/pid.txt)' to kill the job."
+    echo "[INFO] Run 'kill -9 \$(cat jobs/$JOB_NAME/pid.txt)' to kill the job."
 else
     run_job_steps >> "jobs/$JOB_NAME/run.log" 2>&1 &
 fi

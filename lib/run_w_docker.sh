@@ -10,18 +10,18 @@ run_docker_worker() {
         --ssh-key-file="$HOME/.ssh/id_rsa" \
         --worker=0 \
         --command "
-            sudo rm -rf /home/zephyr/maxtext
-            cp -r /home/zephyr/gcs-bucket/maxtext /home/zephyr/maxtext
-            mkdir -p /home/zephyr/maxtext/logs
+            sudo rm -rf $WORK_DIR/maxtext
+            cp -r $WORK_DIR/gcs-bucket/maxtext $WORK_DIR/maxtext
+            mkdir -p $WORK_DIR/maxtext/logs
 
             sudo docker run \
             --privileged \
             --network=host \
-            -v /home/zephyr:/home/zephyr \
-            -v /home/zephyr/.config/gcloud:/root/.config/gcloud \
+            -v $WORK_DIR:$WORK_DIR \
+            -v $WORK_DIR/.config/gcloud:/root/.config/gcloud \
             -v /dev:/dev \
             -v /run:/run \
-            -w /home/zephyr/maxtext \
+            -w $WORK_DIR/maxtext \
             yx3038/maxtext_base_image:latest bash -c \"$COMMAND\"
         "
 }

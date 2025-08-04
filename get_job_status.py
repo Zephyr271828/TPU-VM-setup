@@ -36,7 +36,7 @@ def parse_log(log_path):
     except Exception:
         return "-"
     
-def get_job_status(tpu_name, zone):
+def get_status(tpu_name, zone):
     try:
         result = subprocess.run(
             ["gcloud", "alpha", "compute", "tpus", "tpu-vm", "describe", tpu_name, "--zone", zone, "--format=value(state)"],
@@ -60,7 +60,7 @@ def process_job_dir(job_dir: Path):
     tpu_name = meta.get("tpu_name", "-")
     zone = meta.get("zone", "-")
 
-    status = get_job_status(tpu_name, zone) if tpu_name != "-" and zone != "-" else "-"
+    status = get_status(tpu_name, zone) if tpu_name != "-" and zone != "-" else "-"
     notes = parse_log(log_path)
 
     return {
