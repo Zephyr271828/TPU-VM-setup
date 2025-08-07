@@ -2,14 +2,21 @@
 
 set -euo pipefail
 
+timestamp() {
+  date +"[%Y-%m-%d %H:%M:%S]"
+}
+
 setup_docker_worker() {
     local i=$1
-    echo "[INFO] Setting up Docker and installing flax on worker $i..."
+    echo "$(timestamp) [INFO] Setting up Docker and installing flax on worker $i..."
 
     gcloud alpha compute tpus tpu-vm ssh "$TPU_NAME" \
+        --worker=$i \
         --zone="$ZONE" \
         --ssh-key-file="$HOME/.ssh/id_rsa" \
-        --worker=$i \
+        --ssh-flag="-o ConnectTimeout=15" \
+        --ssh-flag="-o StrictHostKeyChecking=no" \
+        --ssh-flag="-o UserKnownHostsFile=/dev/null" \
         --command "
         sudo docker pull yx3038/maxtext_base_image:latest
         sudo docker run \
@@ -27,4 +34,4 @@ for i in $(seq 0 $((NUM_WORKERS - 1))); do
 done
 
 wait
-echo "[INFO] Docker environment setup complete on all workers."
+echo "$(timestamp) [INFO] Docker environment setup complete on all workers."

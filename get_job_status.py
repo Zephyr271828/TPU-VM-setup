@@ -75,7 +75,7 @@ def main():
     rows = []
     job_dirs = [d for d in jobs_dir.iterdir() if d.is_dir()]
     with ProcessPoolExecutor(max_workers=16) as executor:
-        for row in tqdm(executor.map(process_job_dir, job_dirs), total=len(job_dirs), desc="processing job logs"):
+        for row in executor.map(process_job_dir, job_dirs):
             rows.append(row)
 
     rows.sort(key=lambda x: x["Start Time"] if x["Start Time"] != "-" else "", reverse=True)

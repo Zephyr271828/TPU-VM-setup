@@ -10,3 +10,19 @@ echo "{
   \"end_time\": null,
   \"notes\": \"\"
 }" > jobs/$JOB_NAME/meta.json
+
+required_vars=(
+    "ACCELERATOR" 
+    "BUCKET_DIR"
+    "BUCKET_NAME"
+    "COMMAND"
+    "JOB_NAME" 
+    "NUM_WORKERS" 
+    "TPU_NAME" 
+    "VERSION"
+    "WORK_DIR"
+    "ZONE" 
+)
+for var in "${required_vars[@]}"; do
+    echo "export $var=\"${!var:-}\"" > jobs/$JOB_NAME/config.sh
+done

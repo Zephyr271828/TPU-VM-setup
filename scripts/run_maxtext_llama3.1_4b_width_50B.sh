@@ -1,13 +1,13 @@
 #!/bin/bash
 
-export num_chips=16
+export num_chips=1
 timestamp="$(date +%Y%m%d_%H%M%S)"
 
 export NUM_WORKERS=$(( (num_chips + 3) / 4 ))
-export TPU_NAME=llm-pruning-v6e-${num_chips}-${timestamp}
-export ZONE=us-east1-d
-export ACCELERATOR=v6e-${num_chips}
-export VERSION=v2-alpha-tpuv6e
+export TPU_NAME="llm-pruning-v6e-${num_chips}-${timestamp}"
+export ZONE="us-east1-d"
+export ACCELERATOR="v6e-${num_chips}"
+export VERSION="v2-alpha-tpuv6e"
 export JOB_NAME="llama3.1_4b_width_50B_${timestamp}"
 export BUCKET_NAME="llm_pruning_us_east1_d"
 export BUCKET_DIR="/home/zephyr/gcs-bucket"
@@ -26,5 +26,5 @@ export COMMAND="
     bash scripts/finetune_llama3.1_4b_width_50B.sh
 "
 
-bash run.sh nohup
+bash run.sh nohup loop
 

@@ -2,13 +2,20 @@
 
 set -euo pipefail
 
+timestamp() {
+  date +"[%Y-%m-%d %H:%M:%S]"
+}
+
 run_docker_worker() {
     local i=$1
-    echo "Running main command on worker $i"
+    echo "$(timestamp) Running main command on worker $i"
     gcloud alpha compute tpus tpu-vm ssh "$TPU_NAME" \
+        --worker=0 \
         --zone="$ZONE" \
         --ssh-key-file="$HOME/.ssh/id_rsa" \
-        --worker=0 \
+        --ssh-flag="-o ConnectTimeout=15" \
+        --ssh-flag="-o StrictHostKeyChecking=no" \
+        --ssh-flag="-o UserKnownHostsFile=/dev/null" \
         --command "
             sudo rm -rf $WORK_DIR/maxtext
             cp -r $WORK_DIR/gcs-bucket/maxtext $WORK_DIR/maxtext
@@ -27,4 +34,4 @@ run_docker_worker() {
 }
 
 log_file="jobs/$JOB_NAME/main_command.log"
-(run_docker_worker 0) >> "$log_file" 2>&1 &
+(run_docker_worker 0) >> "$log_file" 2>&1
