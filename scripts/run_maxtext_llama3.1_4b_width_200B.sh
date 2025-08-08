@@ -23,6 +23,7 @@ export COMMAND="
     gcloud config set project vision-mix
     gcloud config set compute/zone us-east1-d
     export TPU_PREFIX=$TPU_NAME
+    export BUCKET_NAME=$BUCKET_NAME
     bash scripts/finetune_llama3.1_4b_width_200B.sh
 "
 

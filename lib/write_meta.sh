@@ -23,6 +23,7 @@ required_vars=(
     "WORK_DIR"
     "ZONE" 
 )
+echo "#!/bin/bash" > jobs/$JOB_NAME/config.sh
 for var in "${required_vars[@]}"; do
-    echo "export $var=\"${!var:-}\"" > jobs/$JOB_NAME/config.sh
+    echo "export $var=\"${!var:-}\"" >> jobs/$JOB_NAME/config.sh
 done

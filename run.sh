@@ -45,8 +45,8 @@ timestamp() {
 run_job_steps() {
     bash lib/request_vm.sh
     bash lib/setup_ssh.sh
-    sleep 30 && bash lib/setup_gcsfuse.sh
-    sleep 30 && bash lib/setup_docker.sh
+    sleep 60 && bash lib/setup_gcsfuse.sh
+    sleep 60 && bash lib/setup_docker.sh
     bash lib/get_ips.sh
     bash lib/run_w_docker.sh
 }

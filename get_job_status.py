@@ -8,7 +8,7 @@ from tabulate import tabulate
 from concurrent.futures import ProcessPoolExecutor
 
 jobs_dir = Path("jobs")
-MAX_NAME_LENGTH = 20
+MAX_NAME_LENGTH = 40
 
 def truncate(name):
     return name if len(name) <= MAX_NAME_LENGTH else name[:MAX_NAME_LENGTH - 3] + "..."

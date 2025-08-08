@@ -29,11 +29,11 @@ setup_gcsfuse_worker() {
             echo '[INFO] Installing gcsfuse...'
             sudo apt-get update -y && sudo apt-get install -y gcsfuse
 
-            mkdir -p '$BUCKET_DIR'
+            sudo mkdir -p '$BUCKET_DIR'
             echo '[INFO] Mounting bucket...'
             mountpoint -q '$BUCKET_DIR' || timeout 30 sudo gcsfuse --implicit-dirs --dir-mode=777 --file-mode=777 --o allow_other '$BUCKET_NAME' '$BUCKET_DIR'
 
-            ls -la '$BUCKET_DIR'
+            sudo ls -la '$BUCKET_DIR'
         "
 
     echo "$(timestamp) [INFO] gcsfuse setup completed on worker $i."
