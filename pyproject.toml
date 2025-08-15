@@ -1,0 +1,14 @@
+# pyproject.toml
+[project]
+name = "jobman"
+version = "0.1.0"
+description = "JOBMAN - TPU job manager"
+authors = [{ name = "Yufeng Xu" }]
+requires-python = ">=3.8"
+dependencies = ["click", "tabulate", "tqdm"]
+
+[project.scripts]
+jobman = "jobman.cli:main"
+
+[tool.setuptools]
+packages = ["jobman"]
