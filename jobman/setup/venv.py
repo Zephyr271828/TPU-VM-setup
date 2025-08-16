@@ -53,6 +53,7 @@ def setup(cfg, logs_dir):
                 fi
                 # This is needed because sometimes the lock is occupied and installation fails
             
+                mkdir -p {venv_path} \
                 {install_py} && \
                 {py_bin} -m venv {venv_path} && \
                 source {venv_path}/bin/activate && \

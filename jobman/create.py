@@ -106,6 +106,7 @@ def create(config_path: str):
 
     with open(job_dir / "ips.json", "w") as f:
         json.dump(ip_info, f, indent=2)
+    (job_dir / "status.txt").write_text("SETUP\n")
     
     # Step 2: setup module registry
     modules = cfg.setup.modules
@@ -147,6 +148,7 @@ def create(config_path: str):
             return
         log("Running main command...", "INFO")
         command.run(cfg, logs_dir, env_type=env_type)
+    (job_dir / "status.txt").write_text("RUNNING\n")
 
     (job_dir / "status.txt").write_text("RUNNING\n")
     log(f"Job {cfg.job.name} launched.", "INFO")

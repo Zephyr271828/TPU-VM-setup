@@ -5,7 +5,17 @@ version = "0.1.0"
 description = "JOBMAN - TPU job manager"
 authors = [{ name = "Yufeng Xu" }]
 requires-python = ">=3.8"
-dependencies = ["click", "tabulate", "tqdm", "omegaconf", "hydra-core"]
+dependencies = [
+    "click", 
+    "tabulate", 
+    "tqdm", 
+    "omegaconf", 
+    "hydra-core", 
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "streamlit
+]
 
 [project.scripts]
 jobman = "jobman.cli:main"
