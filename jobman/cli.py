@@ -1,6 +1,6 @@
 # jobman/cli.py
 import click
-from jobman import create, cancel, status
+from jobman import create, cancel, status, clean
 
 @click.group()
 def main():
@@ -8,18 +8,10 @@ def main():
     pass
 
 @main.command(name="create")
-@click.option("--name", help="Custom job name prefix (default: test_v5e)")
-@click.option("--accelerator", default="v5e", show_default=True, help="Accelerator type (e.g., v5e, v4)")
-@click.option("--zone", default="us-east1-c", show_default=True, help="TPU zone")
-@click.option("--tpu-name", help="TPU name (default: auto-generated)")
-def create_(name, accelerator, zone, tpu_name):
+@click.option("--config", type=click.Path(exists=True), required=True)
+def create_(config):
     """Create a new job"""
-    create.create(
-        name=name,
-        accelerator=accelerator,
-        zone=zone,
-        tpu_name=tpu_name,
-    )
+    create.create(config_path=config)
 
 @main.command(name="status")
 @click.argument("job_id", required=False)
@@ -35,3 +27,13 @@ def status_(job_id):
 def cancel_(job_id):
     """Cancel a job"""
     cancel.cancel(job_id)
+    
+@main.command("clean")
+@click.argument("job_id", required=False)
+@click.option("--all", is_flag=True, help="Delete only logs but keep job folder")
+def clean_cmd(job_id=None, all=False):
+    assert (job_id is None) ^ (all == False)
+    if job_id:
+        clean.clean_single(job_id)
+    elif all:
+        clean.clean_all()
