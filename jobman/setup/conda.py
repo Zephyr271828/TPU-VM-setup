@@ -5,7 +5,7 @@ from pathlib import Path
 from omegaconf import OmegaConf
 from jobman.utils import log, infer_num_workers
 
-def setup_conda(cfg, logs_dir):
+def setup(cfg, logs_dir):
     tpu_name = cfg.tpu.name
     zone = cfg.tpu.zone
     accelerator = cfg.tpu.accelerator
@@ -38,7 +38,7 @@ def setup_conda(cfg, logs_dir):
             "--quiet",
         ]
         
-        remote_cmd = f'''
+        remote_cmd = f'''        
             wget -q https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh && \
             bash miniconda.sh -b -p $HOME/miniconda && \
             source "$HOME/miniconda/etc/profile.d/conda.sh" && \
@@ -54,7 +54,7 @@ def setup_conda(cfg, logs_dir):
             "--quiet",
         ]
 
-        log_file = logs_dir / f"worker_{i}_conda_setup.log"
+        log_file = logs_dir / f"conda_worker_{i}.log"
         with open(log_file, "w") as f:
             subprocess.run(scp_cmd, stdout=f, stderr=f)
             subprocess.run(ssh_cmd, stdout=f, stderr=f)
@@ -80,5 +80,5 @@ if __name__ == "__main__":
     cfg = OmegaConf.load(job_dir / "config.yaml")
     logs_dir = job_dir / "logs"
 
-    setup_conda(cfg, logs_dir)
+    setup(cfg, logs_dir)
    

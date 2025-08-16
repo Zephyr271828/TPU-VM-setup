@@ -1,0 +1,57 @@
+job:
+  name: test-v6
+
+tpu:
+  allocation_mode: "queued-resources"    # tpu-vm | queued-resources
+  accelerator: v6e-1
+  name: vision-mix-${tpu.accelerator}
+  zone: us-east1-d
+  version: v2-alpha-tpuv6e
+  pricing: spot                   
+  # spot | ondemand | preemptible
+  startup_script: null
+  tags: ["jobman", "experiment"]
+  metadata:
+    owner: "yufeng"
+    # owner can be used to map tpus to user I think
+    purpose: "testing jobman"
+
+setup:
+  modules:
+    - gcsfuse
+    - ssh
+    - docker
+    - command
+
+gcsfuse:
+  bucket_name: llm_pruning_us_east1_d
+  mount_path: /home/zephyr/gcs-bucket
+
+ssh:
+  tpu_private_key: /u/yx1168/.ssh/id_rsa
+  tpu_public_key: /u/yx1168/.ssh/id_rsa.pub
+
+docker:
+  image: yx3038/maxtext_base_image:latest
+  mount_dirs:
+    - /home/zephyr
+    - /dev
+    - /run
+    - /home/zephyr/.ssh:/root/.ssh
+  workdir: /home/zephyr
+  flags: ["--privileged", "--network=host"]
+
+conda:
+  env_name: maxtext
+  config_file: assets/fms.yaml
+
+venv:
+  path: /home/zephyr/venvs/maxtext
+  requirements_file: assets/requirements.txt  
+  python: "3.9"  
+
+command:
+  run: |
+    pip show jax
+    pip show flax
+  workers: [0] # int | list | "all"

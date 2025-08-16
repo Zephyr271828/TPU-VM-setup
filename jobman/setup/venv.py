@@ -1,9 +1,11 @@
-import concurrent.futures
+import argparse
 import subprocess
+import concurrent.futures
 from pathlib import Path
+from omegaconf import OmegaConf
 from jobman.utils import log, infer_num_workers
 
-def setup_venv(cfg, logs_dir):
+def setup(cfg, logs_dir):
     tpu_name = cfg.tpu.name
     zone = cfg.tpu.zone
     accelerator = cfg.tpu.accelerator
@@ -21,7 +23,7 @@ def setup_venv(cfg, logs_dir):
 
     def setup_worker_venv(i):
         log(f"Setting up venv on worker {i}...", "INFO")
-        log_file = logs_dir / f"worker_{i}_venv_setup.log"
+        log_file = logs_dir / f"venv_worker_{i}.log"
 
         with open(log_file, "w") as f:
             # Step 1: SCP requirements file
@@ -41,6 +43,16 @@ def setup_venv(cfg, logs_dir):
             py_bin = f"python{python_version}" if python_version else "python3"
 
             remote_cmd = f'''
+                if sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+                    LOCK_PID=$(sudo lsof -t /var/lib/dpkg/lock-frontend || true)
+                    if [ -n "$LOCK_PID" ]; then
+                        echo "[WARN] Killing process $LOCK_PID holding dpkg lock"
+                        sudo kill -9 $LOCK_PID
+                        sleep 2
+                    fi
+                fi
+                # This is needed because sometimes the lock is occupied and installation fails
+            
                 {install_py} && \
                 {py_bin} -m venv {venv_path} && \
                 source {venv_path}/bin/activate && \
@@ -65,3 +77,15 @@ def setup_venv(cfg, logs_dir):
                 log(f"Worker thread failed: {exc}", "ERROR")
 
     log("✅ venv setup complete on all workers.", "INFO")
+    
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--job-id", required=True)
+    args = parser.parse_args()
+
+    job_dir = Path(f"jobs/{args.job_id}")
+    cfg = OmegaConf.load(job_dir / "config.yaml")
+    logs_dir = job_dir / "logs"
+
+    setup(cfg, logs_dir)
+   
