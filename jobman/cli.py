@@ -1,39 +1,45 @@
 # jobman/cli.py
 import click
-from jobman import create, cancel, status, clean
+
+from jobman.jobman import JobMan
 
 @click.group()
-def main():
-    """TPU Job Manager CLI"""
+def cli():
+    """JobMan CLI: manage TPU jobs."""
     pass
 
-@main.command(name="create")
-@click.option("--config", type=click.Path(exists=True), required=True)
-def create_(config):
-    """Create a new job"""
-    create.create(config_path=config)
-
-@main.command(name="status")
-@click.argument("job_id", required=False)
-def status_(job_id):
-    """Check status of jobs (or one specific job)"""
-    if job_id:
-        status.status_single(job_id)
-    else:
-        status.status_all()
-
-@main.command(name="cancel")
-@click.argument("job_id")
-def cancel_(job_id):
-    """Cancel a job"""
-    cancel.cancel(job_id)
+@cli.command()
+@click.argument('config_path', type=click.Path(exists=True))
+def create(config_path):
+    jm = JobMan()  
+    job_id = jm.create_job(config_path)
+    jm.start_job(job_id)
     
-@main.command("clean")
-@click.argument("job_id", required=False)
-@click.option("--all", is_flag=True, help="Delete only logs but keep job folder")
-def clean_cmd(job_id=None, all=False):
-    assert (job_id is None) ^ (all == False)
-    if job_id:
-        clean.clean_single(job_id)
-    elif all:
-        clean.clean_all()
+@cli.command(name="resume")
+@click.argument("job_id", type=str)
+def resume(job_id):
+    """Cancel a running job."""
+    jm = JobMan()
+    jm.start_job(job_id)
+    
+@cli.command(name="cancel")
+@click.argument("job_id", type=str)
+def cancel(job_id):
+    """Cancel a running job."""
+    jm = JobMan()
+    jm.cancel_job(job_id)
+    
+@cli.command(name="delete")
+@click.argument("job_id", type=str)
+def delete(job_id):
+    """Cancel a running job."""
+    jm = JobMan()
+    jm.delete_job(job_id)
+
+@cli.command(name="list")
+def list_jobs():
+    """List all jobs and their status."""
+    jm = JobMan()
+    jm.print_job_table()
+    
+    

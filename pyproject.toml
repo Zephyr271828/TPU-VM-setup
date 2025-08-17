@@ -14,11 +14,11 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "pydantic",
-    "streamlit
+    "streamlit"
 ]
 
 [project.scripts]
-jobman = "jobman.cli:main"
+jobman = "jobman.cli:cli"
 
 [tool.setuptools]
 packages = ["jobman"]

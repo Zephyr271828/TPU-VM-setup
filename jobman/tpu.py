@@ -1,110 +1,200 @@
-import time
+import logging
 import subprocess
+from pathlib import Path
 from datetime import datetime
-from jobman.utils import log
 
-def request_tpu(*, 
-                tpu_name, 
-                zone, 
-                accelerator, 
-                version,
-                pricing="ondemand", 
-                startup_script=None,
-                tags=None, 
-                metadata=None, 
-                logfile=None,
-                allocation_mode="tpu-vm",
-    ):
-    assert allocation_mode in {"tpu-vm", "queued-resources"}
-    cmd = [
-        "gcloud alpha" if allocation_mode == "tpu-vm" else "gcloud",
-        "compute", "tpus",
-        "tpu-vm" if allocation_mode == "tpu-vm" else "queued-resources",
-        "create", tpu_name,
-        "--zone", zone,
-        "--accelerator-type", accelerator,
-        "--version" if allocation_mode == "tpu-vm" else "--runtime-version", version
-    ]
-    if allocation_mode == "queued-resources":
-        cmd += ["--node-id", tpu_name]
-        
-    pricing = pricing.lower()
-    if pricing == "preemptible":
-        cmd += ["--preemptible"]
-    elif pricing == "spot":
-        cmd += ["--spot"]  # ⚠️ Only if supported by your GCP quota
-    elif pricing == "ondemand":
-        pass  # no flag
-    else:
-        raise ValueError(f"Invalid pricing type: {pricing}")
+from jobman.utils import setup_logger
 
-    if startup_script:
-        cmd += ["--metadata", f"startup-script={startup_script}"]
-    if metadata:
-        meta_str = ",".join(f"{k}={v}" for k, v in metadata.items())
-        cmd += ["--metadata", meta_str]
-    if tags:
-        cmd += ["--tags", ",".join(tags)]
-
-    log("Launch command:", "INFO")
-    log(" ".join(cmd), "DEBUG")
-
-    if allocation_mode == "tpu-vm":
-        return request_tpu_vm(cmd, logfile)
-    elif allocation_mode == "queued-resources":
-        return request_queued_resource(cmd, logfile, tpu_name, zone)
-
-def request_tpu_vm(cmd, logfile):
-    attempt = 1
-    while True:
-        log(f"Attempt {attempt}: Creating TPU VM...", "INFO")
-        with open(logfile, "a") as f:
-            result = subprocess.run(cmd, stdout=f, stderr=f)
-        if result.returncode == 0:
-            log("TPU VM created successfully.", "INFO")
-            return True
-        log("Failed. Retrying immediately...", "ERROR")
-        attempt += 1
-        
-def check_queued_resource_status(tpu_name: str, zone: str) -> str:
-    try:
-        result = subprocess.run(
-            [
-                "gcloud", "alpha", "compute", "tpus", "queued-resources", "describe", tpu_name,
-                "--zone", zone,
-                "--format=value(state)"
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        result = result.stdout.strip()
-        result = result.replace("state=", "")
-        return result if result else "NOT FOUND"
-    except Exception as e:
-        log(f"Error while checking status: {e}", "ERROR")
-        return "UNKNOWN"
+class TPU:
     
-def request_queued_resource(cmd, logfile, tpu_name, zone, poll_interval=30):
-    with open(logfile, "w") as f:
-        result = subprocess.run(cmd, stdout=f, stderr=f)
+    def __init__(self, cfg):
+        self.name = cfg.tpu.name
+        self.zone = cfg.tpu.zone
+        self.accelerator = cfg.tpu.accelerator
+        self.version = cfg.tpu.version
+        self.pricing = cfg.tpu.pricing
+        self.tags = cfg.tpu.tags
+        self.metadata = cfg.tpu.metadata
+        self.startup_script = cfg.tpu.get("startup_script", None)
         
-    if result.returncode != 0:
-        log("Failed to submit queued resource.", "ERROR")
-        return False
-
-        log("Queued resource submitted.", "INFO")
-    log("Polling TPU status until it becomes READY...", "INFO")
-
-    while True:
-        status = check_queued_resource_status(tpu_name, zone)
-        log(f"Current TPU status: {status}", "DEBUG")
-
-        if status in {"READY", "ACTIVE"}:
-            log("TPU is READY!", "INFO")
-            return True
-        elif status in {"FAILED", "DELETING", "UNSPECIFIED", "NOT FOUND"}:
-            log(f"TPU entered failed state: {status}", "ERROR")
-            return False
+        self.mode = cfg.tpu.allocation_mode
+        self.log_file = Path(cfg.job.dir) / "logs" / "tpu.log"
+        self.logger = setup_logger(log_file=self.log_file)
+        
+    def check_tpu_status(self):
+        """Check current status of the TPU."""
+        if self.mode == "tpu-vm":
+            return self._check_tpu_vm_status()
         else:
+            return self._check_queued_resource_status()
+    
+    def _check_tpu_vm_status(self):
+        try:
+            result = subprocess.run(
+                [
+                    "gcloud", "alpha", "compute", "tpus", "tpu-vm", "describe",
+                    self.name, "--zone", self.zone, "--format=value(state)"
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            return result.stdout.strip() or "NOT FOUND"
+        except Exception as e:
+            self.logger.error(f"Error checking TPU VM status: {e}")
+            return "UNKNOWN"
+    
+    def _check_queued_resource_status(self):
+        try:
+            result = subprocess.run(
+                [
+                    "gcloud", "compute", "tpus", "queued-resources", "describe",
+                    self.name, "--zone", self.zone, "--format=value(state)"
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            result = result.stdout.strip().replace("state=", "")
+            return result if result else "NOT FOUND"
+        except Exception as e:
+            self.logger.error(f"Error checking queued TPU status: {e}")
+            return "UNKNOWN"
+        
+    def request(self):
+        assert self.mode in {"tpu-vm", "queued-resources"}
+
+        base_cmd = [
+            "gcloud", "alpha" if self.mode == "tpu-vm" else "", "compute", "tpus",
+            "tpu-vm" if self.mode == "tpu-vm" else "queued-resources",
+            "create", self.name,
+            "--zone", self.zone,
+            "--accelerator-type", self.accelerator,
+            "--version" if self.mode == "tpu-vm" else "--runtime-version", self.version
+        ]
+
+        if self.mode == "queued-resources":
+            base_cmd += ["--node-id", self.name]
+
+        if self.pricing == "preemptible":
+            base_cmd += ["--preemptible"]
+        elif self.pricing == "spot":
+            base_cmd += ["--spot"]
+
+        if self.startup_script:
+            base_cmd += ["--metadata", f"startup-script={self.startup_script}"]
+        elif self.metadata:
+            meta_str = ",".join(f"{k}={v}" for k, v in self.metadata.items())
+            base_cmd += ["--metadata", meta_str]
+
+        if self.tags:
+            base_cmd += ["--tags", ",".join(self.tags)]
+
+        # Clean empty strings from gcloud command
+        cmd = [x for x in base_cmd if x]
+
+        self.logger.debug("TPU creation command:")
+        self.logger.debug(" ".join(cmd))
+
+        if self.mode == "tpu-vm":
+            return self._request_tpu_vm(cmd)
+        else:
+            return self._request_queued_resources(cmd)
+        
+    def _request_tpu_vm(self, cmd):
+        attempt = 1
+        while True:
+            self.logger.info(f"Attempt {attempt}: Creating TPU VM...")
+            with open(self.log_file, "a") as f:
+                result = subprocess.run(cmd, stdout=f, stderr=f)
+            if result.returncode == 0:
+                self.logger.info("TPU VM created successfully.")
+                return True
+            self.logger.error("Failed. Retrying immediately...")
+            attempt += 1
+    
+    def _request_queued_resources(self, cmd):
+        with open(self.log_file, "a") as f:
+            result = subprocess.run(cmd, stdout=f, stderr=f)
+
+        if result.returncode != 0:
+            self.logger.error("Failed to submit queued resource.")
+            return False
+
+        self.logger.info("Queued resource submitted. Polling until READY...")
+
+        while True:
+            status = self._check_queued_resource_status()
+            self.logger.info(f"Current status: {status}")
+            if status in {"READY", "ACTIVE"}:
+                self.logger.info("TPU is READY!")
+                return True
+            elif status in {"FAILED", "DELETING", "UNSPECIFIED", "NOT FOUND"}:
+                logingg.error(f"TPU failed or disappeared: {status}")
+                return False
             time.sleep(poll_interval)
+    
+    def get_tpu_ips(self):
+        """Get internal and external IPs of all TPU workers."""
+        try:
+            result = subprocess.run(
+                [
+                    "gcloud", "alpha", "compute", "tpus", "tpu-vm", "describe",
+                    self.name, "--zone", self.zone, "--format=json"
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=True
+            )
+            data = json.loads(result.stdout)
+            workers = data.get("networkEndpoints", [])
+
+            ip_info = []
+            for i, w in enumerate(workers):
+                external_ip = w.get("accessConfig", {}).get("externalIp", "-")
+                internal_ip = w.get("ipAddress", "-")
+                ip_info.append({
+                    "worker": i,
+                    "internal_ip": internal_ip,
+                    "external_ip": external_ip
+                })
+
+            return ip_info
+
+        except subprocess.CalledProcessError as e:
+            print(f"Failed to describe TPU: {e.stderr}")
+            return []
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return []
+    
+    def delete(self):
+        self.logger = setup_logger(stdout=True)
+        if self.mode == "tpu-vm":
+            cmd = [
+                "gcloud", "alpha", "compute", "tpus", "tpu-vm", "delete",
+                self.name, "--zone", self.zone, "--quiet"
+            ]
+        elif self.mode == "queued-resources":
+            cmd = [
+                "gcloud", "compute", "tpus", "queued-resources", "delete",
+                self.name, "--zone", self.zone, "--quiet"
+            ]
+        else:
+            self.logger.error(f"Unknown TPU mode: {self.mode}")
+            return
+
+        self.logger.info(f"Deleting TPU {self.name} in zone {self.zone}...")
+        try:
+            subprocess.run(cmd, check=True)
+            self.logger.info("TPU deleted successfully.")
+        except subprocess.CalledProcessError as e:
+            self.logger.error(f"Failed to delete TPU: {e}")
+            
+        if self.log_file.exists():
+            try:
+                self.log_file.unlink()
+                self.logger.info(f"Deleted log file: {self.log_file}")
+            except Exception as e:
+                self.logger.warning(f"Failed to delete log file: {e}")
