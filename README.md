@@ -15,7 +15,7 @@ jobman create --config=configs/quick-start.yaml
 ### Basic Commands
 | Purpose | Command |
 |:--:|:--:|
-| Create a new job | `jobman create --config=<config_path>` |
+| Create a new job | `jobman create <config_path>` |
 | Check all jobs status | `jobman list` |
 | Cancel and delete a specific job | `jobman delete <job_id>` |
 | Run setup on a specific job | e.g: `python -m jobman.envs.docker --job-id=<job_id>` |
@@ -44,11 +44,10 @@ tpu:
 ```
 
 ## Setup Modules
-Jobman treats different components of the setup stage as modules, and you can combine the modules freely in any order you want. 
+It's strongly suggested that you configure `ssh` and `gcsfuse` before starting running jobs. The former enables convenient connection between TPU hosts, whereas the latter mounts your bucket to the TPU host.
 
 ### SSH & GCSFUSE
-Among those modules, 2 of them are strongly suggested: `ssh` and `gcsfuse`. The former enables convenient connection between TPU hosts, whereas the latter mounts your bucket to the TPU host. You may configure as follows:
-SSH
+SSH  
 ```yaml
 ssh:
   private_key: /u/yx1168/.ssh/id_rsa
@@ -62,21 +61,16 @@ gcsfuse:
 ```
 
 ### Environment Setup
-Jobman enables 3 types of env setup: docker, conda, and venv. You should choose at most 1 among the 3 when choosing the modules you want. For example, you may configure as follows to use docker:
+Jobman enables 3 types of env setup: docker, conda, and venv. You should choose 1 from the 3 with `job.env_type`. For example, for docker you may configure as follows:
 ```yaml
-setup:
-  modules:
-    - gcsfuse
-    - ssh
-    - docker
-    - command
+job:
+  env_type: docker
 docker:
   image: yx3038/maxtext_base_image:latest
   mount_dirs:
     - /home/zephyr
     - /dev
     - /run
-    - /home/zephyr/.ssh:/root/.ssh
   workdir: /home/zephyr
   flags: ["--privileged", "--network=host"]
 ```
