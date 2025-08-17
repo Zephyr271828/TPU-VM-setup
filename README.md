@@ -16,12 +16,10 @@ jobman create --config=configs/quick-start.yaml
 | Purpose | Command |
 |:--:|:--:|
 | Create a new job | `jobman create --config=<config_path>` |
-| Check all jobs status | `jobman status` |
-| Check a specific job status | `jobman status <job_id>` |
-| Cancel and delete all jobs | `jobman clean --all` |
-| Cancel and delete a specific job | `jobman clean <job_id>` |
-| Run setup on a specific job | e.g: `python jobman/setup/docker.py --job-id=<job_id>` |
-| Run command on a specific job | e.g: `python jobman/command.py --job-id=<job_id>` |
+| Check all jobs status | `jobman list` |
+| Cancel and delete a specific job | `jobman delete <job_id>` |
+| Run setup on a specific job | e.g: `python -m jobman.envs.docker --job-id=<job_id>` |
+| Run command on a specific job | e.g: `python -m jobman.job --job-id=<job_id>` |
 
 ## Overall Structure
 JOBMAN treats each job instance as a directory in `jobs/<job_id>`. During the creation of the job, information including IP addresses, config snapshot, start time and life cycle will be saved to this directory. TPU request logs, setup logs, and main command logs will be available at `jobs/<job_id>/logs`. For instance, you can find host 0 gcsfuse setup log at `jobs/<job_id>/logs/gcsfuse_worker_0.log`. 
@@ -53,8 +51,8 @@ Among those modules, 2 of them are strongly suggested: `ssh` and `gcsfuse`. The 
 SSH
 ```yaml
 ssh:
-  tpu_private_key: /u/yx1168/.ssh/id_rsa
-  tpu_public_key: /u/yx1168/.ssh/id_rsa.pub
+  private_key: /u/yx1168/.ssh/id_rsa
+  public_key: /u/yx1168/.ssh/id_rsa.pub
 ```
 GCSFUSE
 ```yaml
