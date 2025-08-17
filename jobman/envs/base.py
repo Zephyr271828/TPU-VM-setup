@@ -7,5 +7,7 @@ class ENV:
     def setup(self):
         pass
     
-    def run(self, command):
-        pass
+    def patch_command(self, cmd):
+        return cmd
+    
+    

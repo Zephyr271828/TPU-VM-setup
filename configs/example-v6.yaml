@@ -23,8 +23,8 @@ gcsfuse:
   mount_path: /home/zephyr/gcs-bucket
 
 ssh:
-  private_key: /u/yx1168/.ssh/id_rsa
-  public_key: /u/yx1168/.ssh/id_rsa.pub
+  private_key: ~/.ssh/id_rsa
+  public_key: ~/.ssh/id_rsa.pub
 
 docker:
   image: yx3038/maxtext_base_image:latest
@@ -37,16 +37,18 @@ docker:
   flags: ["--privileged", "--network=host"]
 
 conda:
-  env_name: maxtext
+  name: fms
   config_file: assets/fms.yaml
 
 venv:
-  path: /home/zephyr/venvs/maxtext
+  name: maxtext
   requirements_file: assets/requirements.txt  
   python: "3.9"  
 
 command:
-  run: |
+  cmd: |
+    # pip show jax
+    # pip show flax
     rm -rf /home/zephyr/maxtext
     cp -r /home/zephyr/gcs-bucket/maxtext /home/zephyr/maxtext
     mkdir -p /home/zephyr/maxtext/logs

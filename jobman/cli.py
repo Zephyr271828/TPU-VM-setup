@@ -40,6 +40,6 @@ def delete(job_id):
 def list_jobs():
     """List all jobs and their status."""
     jm = JobMan()
-    jm.print_job_table()
+    jm.list_jobs()
     
     

@@ -12,6 +12,7 @@ from jobman.gcsfuse import GCSFUSE
 from jobman.envs.docker import DOCKER
 from jobman.envs.conda import CONDA 
 from jobman.envs.venv import VENV
+from jobman.command import COMMAND
 
 from jobman.utils import setup_logger
 
@@ -29,6 +30,7 @@ class Job:
         self.tpu = TPU(cfg)
         self.ssh = SSH(cfg)
         self.gcsfuse = GCSFUSE(cfg)
+        self.command = COMMAND(cfg)
         
         self.env_type = cfg.job.env_type
         if self.env_type == 'docker':
@@ -43,56 +45,87 @@ class Job:
         self.log_file = self.dir / 'logs' / 'job.log'
         self.logger = setup_logger(log_file=self.log_file)
 
+    def request(self):
+        self.logger.info("Requesting TPU...")
+        success = self.tpu.request()
+        if not success:
+            self.logger.error("TPU allocation failed.")
+            return False
+        
+        self.cfg.tpu.ips = self.tpu.get_ips()
+        OmegaConf.save(cfg, self.dir / "config.yaml")
+        return True
+
     def setup(self):
-        self.ssh.setup()
-        self.gcsfuse.setup()
-        self.env.setup()
+        if not self.ssh.setup():
+            return False
+        if not self.gcsfuse.setup():
+            return False
+        if not self.env.setup():
+            return False
+        
+        return True
+    
+    def execute(self):
+        self.command.full_cmd = self.env.patch_command(self.command.base_cmd)
+        return self.command.run()
     
     def run(self):
-        try:
-            self.logger.info("Requesting TPU...")
-            success = self.tpu.request()
-            if not success:
-                self.logger.error("TPU allocation failed.")
-                pass
-            
-            self.logger.info("Running setup steps (SSH, GCSFuse, ENV)...")
-            self.setup()
-            
-            self.logger.info(f"Job {self.id} finished successfully")
+        while True:
+            try:
+                if not self.request():
+                    return False
 
-        except KeyboardInterrupt:
-            self.logger.warning("Job interrupted by user")
-        except Exception as e:
-            self.logger.exception(f"Job failed with error: {e}")
+                if not self.setup():
+                    self.logger.error(f"Job {self.id} setup failed.")
+                    if not self.loop:
+                        return False
+                    continue  # try again
+
+                if not self.execute():
+                    self.logger.error(f"Job {self.id} execution failed.")
+                    if not self.loop:
+                        return False
+                    continue  # try again
+
+                self.logger.info(f"Job {self.id} finished successfully.")
+                return True
+
+            except KeyboardInterrupt:
+                self.logger.warning("Job interrupted by user")
+                return False
+
+            except Exception as e:
+                self.logger.exception(f"Job failed with error: {e}")
+                if not self.loop:
+                    return False
+                self.logger.info("Retrying job due to error...")
             
     def delete(self):
         self.logger = setup_logger(stdout=True)
         self.logger.info(f"Deleting job {self.id}...")
 
-        if self.tpu.log_file.exists():
-            try:
-                self.tpu.delete()
-                self.logger.info(f"Deleted TPU for job {self.id}")
-            except Exception as e:
-                self.logger.warning(f"Failed to delete TPU for job {self.id}: {e}")
-        else:
-            self.logger.info(f"TPU log file not found. Skipping TPU deletion.")
+        try:
+            self.tpu.delete()
+            self.logger.info(f"Deleted TPU for job {self.id}")
+        except Exception as e:
+            self.logger.warning(f"Failed to delete TPU for job {self.id}: {e}")
             
-        if self.log_file.exists():
-            try:
-                self.log_file.unlink()
-                self.logger.info(f"Deleted log file: {self.log_file}")
-            except Exception as e:
-                self.logger.warning(f"Failed to delete log file: {e}")
+        # if self.log_file.exists():
+        #     try:
+        #         self.log_file.unlink()
+        #         self.logger.info(f"Deleted log file: {self.log_file}")
+        #     except Exception as e:
+        #         self.logger.warning(f"Failed to delete log file: {e}")
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("config_path", type=str, help="Path to job config YAML file")
+    parser.add_argument("--job-id", required=True)
     args = parser.parse_args()
 
-    cfg = OmegaConf.load(args.config_path)
+    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
     job = Job(cfg)
+    
     job.run()
         
         

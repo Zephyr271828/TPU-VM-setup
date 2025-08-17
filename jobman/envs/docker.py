@@ -1,16 +1,100 @@
+import argparse
+import subprocess
+import concurrent.futures
+from pathlib import Path
+from omegaconf import OmegaConf
+
 from jobman.envs.base import ENV
+from jobman.utils import setup_logger
 
 class DOCKER(ENV):
     
     def __init__(self, cfg):
+        self.cfg = cfg
         self.image = cfg.docker.image
         self.mount_dirs = cfg.docker.get('mount_dirs', None)
         self.workdir = cfg.docker.get('work_dir', None)
         self.flags = cfg.docker.get('flags', None)
         
-    def setup(self):
-        pass
-    
-    def run(self, command):
-        pass
+        self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
         
+    def setup(self):
+        self.logger.info(f"Setting up Docker on TPU workers: image={self.image}")
+        
+        any_failed = False
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.cfg.tpu.num_workers) as executor:
+            futures = [executor.submit(self.setup_worker, i) for i in range(self.cfg.tpu.num_workers)]
+            for future in concurrent.futures.as_completed(futures):
+                if exc := future.exception():
+                    self.logger.error(f"Worker thread failed: {exc}")
+                    any_failed = True
+
+        if any_failed:
+            self.logger.warning("GCSFuse setup completed with at least one worker failed.")
+        else:
+            self.logger.info("GCSFuse setup completed successfully on all workers.")
+        return not any_failed
+    
+    def setup_worker(self, i):
+        self.logger.info(f"Worker {i}: Setting up Docker...")
+        log_file = self.cfg.job.dir / "logs"  / f"docker_worker_{i}.log"
+
+        with open(log_file, "w") as f:
+            try:
+                cmd1 = [
+                    "gcloud", "alpha", "compute", "tpus", "tpu-vm", "ssh", self.cfg.tpu.name,
+                    "--zone", self.cfg.tpu.zone,
+                    f"--worker={i}",
+                    "--command", "sudo usermod -aG docker $USER && sudo systemctl restart docker",
+                    f"--ssh-key-file={self.cfg.ssh.private_key}",
+                    "--ssh-flag=-o ConnectTimeout=15",
+                    "--ssh-flag=-o StrictHostKeyChecking=no",
+                    "--ssh-flag=-o UserKnownHostsFile=/dev/null",
+                    "--quiet",
+                ]
+                subprocess.run(cmd1, check=True, stdout=f, stderr=f)
+
+                cmd2 = [
+                    "gcloud", "alpha", "compute", "tpus", "tpu-vm", "ssh", self.cfg.tpu.name,
+                    "--zone", self.cfg.tpu.zone,
+                    f"--worker={i}",
+                    "--command", f"docker pull {self.image}",
+                    f"--ssh-key-file={self.cfg.ssh.private_key}",
+                    "--ssh-flag=-o ConnectTimeout=15",
+                    "--ssh-flag=-o StrictHostKeyChecking=no",
+                    "--ssh-flag=-o UserKnownHostsFile=/dev/null",
+                    "--quiet",
+                ]
+                subprocess.run(cmd2, check=True, stdout=f, stderr=f)
+            except Exception as e:
+                self.logger.error(f"Worker {i} setup failed: {e}")
+                raise
+        
+    def patch_command(self, cmd):
+
+        volume_flags = []
+        for d in self.mount_dirs or []:
+            d = str(Path(d).expanduser())
+            if ":" in d:
+                host_path, container_path = d.split(":", 1)
+            else:
+                host_path = container_path = d
+            volume_flags.append(f"-v {host_path}:{container_path}")
+        volume_flags_str = " ".join(volume_flags)
+        workdir_flag = f"-w {self.workdir}" if self.workdir else ""
+        flags_str = " ".join(self.flags or [])
+
+        docker_cmd = f"docker run {flags_str} {volume_flags_str} {workdir_flag} {self.image} bash -c \"{cmd}\""
+
+        return docker_cmd
+        
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--job-id", required=True)
+    args = parser.parse_args()
+    
+    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
+    docker = DOCKER(cfg)
+    
+    # docker.setup()
+    print(docker.patch_command(cfg.command.cmd))

@@ -1,7 +1,11 @@
+import time
+import json
 import logging
+import argparse
 import subprocess
 from pathlib import Path
 from datetime import datetime
+from omegaconf import OmegaConf
 
 from jobman.utils import setup_logger
 
@@ -42,7 +46,7 @@ class TPU:
             return result.stdout.strip() or "NOT FOUND"
         except Exception as e:
             self.logger.error(f"Error checking TPU VM status: {e}")
-            return "UNKNOWN"
+            return "UNKNOW"
     
     def _check_queued_resource_status(self):
         try:
@@ -63,6 +67,25 @@ class TPU:
         
     def request(self):
         assert self.mode in {"tpu-vm", "queued-resources"}
+        
+        status = self._check_tpu_vm_status()
+        if status in {"READY", "ACTIVE"}:
+            return True
+        elif status in {"PREEMPTED", "TERMINATED", "STOPPED", "SUSPENDED"}:
+            self.logger.warning(f"TPU is in unrecoverable state: {status}. Deleting...")
+            self.delete()
+        elif status in {"CREATING", "PROVISIONING"}:
+            self.logger.info("TPU is currently provisioning. Waiting until it becomes ready...")
+            if self.wait_tpu_vm_until_ready():
+                return True
+            else:
+                self.logger.warning("TPU failed to become ready. Deleting...")
+                self.delete()
+        elif status in {"NOT FOUND"}:
+            pass
+        else:
+            self.logger.error(f"Unexpected TPU status: {status}. Deleting as precaution.")
+            self.delete()
 
         base_cmd = [
             "gcloud", "alpha" if self.mode == "tpu-vm" else "", "compute", "tpus",
@@ -123,18 +146,21 @@ class TPU:
 
         self.logger.info("Queued resource submitted. Polling until READY...")
 
+        return self.wait_tpu_vm_until_ready()
+    
+    def wait_tpu_vm_until_ready(self, poll_interval=30):
         while True:
-            status = self._check_queued_resource_status()
+            status = self._check_tpu_vm_status()
             self.logger.info(f"Current status: {status}")
             if status in {"READY", "ACTIVE"}:
                 self.logger.info("TPU is READY!")
                 return True
-            elif status in {"FAILED", "DELETING", "UNSPECIFIED", "NOT FOUND"}:
-                logingg.error(f"TPU failed or disappeared: {status}")
+            elif status in {"FAILED", "DELETING", "UNSPECIFIED"}:
+                self.logger.error(f"TPU failed or disappeared: {status}")
                 return False
             time.sleep(poll_interval)
     
-    def get_tpu_ips(self):
+    def get_ips(self):
         """Get internal and external IPs of all TPU workers."""
         try:
             result = subprocess.run(
@@ -171,30 +197,43 @@ class TPU:
     
     def delete(self):
         self.logger = setup_logger(stdout=True)
-        if self.mode == "tpu-vm":
+        
+        self.logger.info(f"Deleting TPU {self.name} in zone {self.zone}...")
+        
+        vm_status = self._check_tpu_vm_status()
+        if vm_status != "NOT FOUND":
             cmd = [
                 "gcloud", "alpha", "compute", "tpus", "tpu-vm", "delete",
                 self.name, "--zone", self.zone, "--quiet"
             ]
-        elif self.mode == "queued-resources":
-            cmd = [
-                "gcloud", "compute", "tpus", "queued-resources", "delete",
-                self.name, "--zone", self.zone, "--quiet"
-            ]
+            if subprocess.run(cmd, check=True).returncode == 0:
+                self.logger.info("TPU VM deleted successfully.")
+            else:
+                self.logger.info("No TPU VM to delete or deletion failed (possibly already gone).")
         else:
-            self.logger.error(f"Unknown TPU mode: {self.mode}")
-            return
-
-        self.logger.info(f"Deleting TPU {self.name} in zone {self.zone}...")
-        try:
-            subprocess.run(cmd, check=True)
-            self.logger.info("TPU deleted successfully.")
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Failed to delete TPU: {e}")
+            self.logger.info("TPU VM not found. Skipping deletion.")
             
-        if self.log_file.exists():
-            try:
-                self.log_file.unlink()
-                self.logger.info(f"Deleted log file: {self.log_file}")
-            except Exception as e:
-                self.logger.warning(f"Failed to delete log file: {e}")
+        if self.mode == "queued-resources":
+            queue_status = self._check_queued_resource_status()
+            if queue_status != "NOT FOUND":
+                cmd = [
+                    "gcloud", "compute", "tpus", "queued-resources", "delete",
+                    self.name, "--zone", self.zone, "--quiet"
+                ]
+                if subprocess.run(cmd, check=True).returncode == 0:
+                    self.logger.info("Queued resource deleted.")
+                else:
+                    self.logger.warning("Failed to delete queued resource (might already be gone).")
+            else:
+                self.logger.info("Queued resource not found. Skipping deletion.")
+            
+    
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--job-id", required=True)
+    args = parser.parse_args()
+    
+    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
+    tpu = TPU(cfg)
+    
+    print(json.dumps(tpu.get_ips(), indent=2))
