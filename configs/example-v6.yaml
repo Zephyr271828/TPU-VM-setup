@@ -32,7 +32,7 @@ docker:
     - /home/zephyr
     - /dev
     - /run
-    - /home/zephyr/.ssh:/root/.ssh
+    # - /home/zephyr/.ssh:/root/.ssh
   workdir: /home/zephyr
   flags: ["--privileged", "--network=host"]
 
