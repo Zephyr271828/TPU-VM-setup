@@ -185,7 +185,7 @@ class JobMan:
         
         for job_key, meta in self.meta.items():
             job_id = meta.get("job_id")
-            status = meta.get("status", "UNKNOWN")        
+            
             started = meta.get("started_at", meta.get("created_at", "N/A"))
             session_name = meta.get("session_name", f"job_{job_id}")
 
@@ -203,15 +203,21 @@ class JobMan:
                 except:
                     host0_ip = "N/A"
             else:
-                job_name = "N/A"
-                accelerator = "N/A"
-                zone = "N/A"
-                host0_ip = "N/A"
+                job_name = accelerator = zone = host0_ip = "N/A"
                 
-            if status == "RUNNING" and not self.check_tmux_session(session_name):
-                status = "DEAD"
-                meta["status"] = "DEAD"
-                meta["ended_at"] = datetime.now().isoformat()
+            if self.check_tmux_session(session_name):
+                status = "RUNNING"
+            else:
+                ping_result = subprocess.run(
+                    ["ping", "-c", "1", "-W", "1", host0_ip],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                if ping_result.returncode == 0:
+                    meta["status"] = status = "IDLE" 
+                else:
+                    meta["status"] = status = "DEAD"
+                    meta["ended_at"] = datetime.now().isoformat()
                 updated = True
 
             rows.append([job_id, job_name, started, accelerator, zone, host0_ip, status])

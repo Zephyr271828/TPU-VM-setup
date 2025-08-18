@@ -1,12 +1,14 @@
 job:
-  name: test-v4
+  name: test-v5
+  env_type: docker
+  loop: False
 
 tpu:
   allocation_mode: "queued-resources"    # tpu-vm | queued-resources
   accelerator: v5litepod-16
   name: yufeng-${tpu.accelerator}
-  zone: europe-west4-b
-  version: v2-alpha-tpuv5
+  zone: us-central1-a
+  version: v2-alpha-tpuv5-lite
   pricing: spot                   
   # spot | ondemand | preemptible
   startup_script: null
@@ -16,20 +18,13 @@ tpu:
     # owner can be used to map tpus to user I think
     purpose: "testing jobman"
 
-setup:
-  modules:
-    - gcsfuse
-    - docker
-    - ssh
-    - command
-
 gcsfuse:
   bucket_name: llm_pruning_us_east1_d
   mount_path: /home/zephyr/gcs-bucket
 
 ssh:
-  tpu_private_key: /u/yx1168/.ssh/id_rsa
-  tpu_public_key: /u/yx1168/.ssh/id_rsa.pub
+  private_key: ~/.ssh/id_rsa
+  public_key: ~/.ssh/id_rsa.pub
 
 docker:
   image: yx3038/maxtext_base_image:latest
@@ -37,19 +32,23 @@ docker:
     - /home/zephyr
     - /dev
     - /run
+    # - /home/zephyr/.ssh:/root/.ssh
   workdir: /home/zephyr
   flags: ["--privileged", "--network=host"]
 
 conda:
-  env_name: maxtext
-  python: "3.9"
-  requirements: requirements.txt
+  name: fms
+  config_file: assets/fms.yaml
 
 venv:
-  path: /home/zephyr/venvs/maxtext
+  name: maxtext
+  requirements_file: assets/requirements.txt  
+  python: "3.9"  
 
 command:
-  run: |
+  cmd: |
+    # pip show jax
+    # pip show flax
     rm -rf /home/zephyr/maxtext
     cp -r /home/zephyr/gcs-bucket/maxtext /home/zephyr/maxtext
     mkdir -p /home/zephyr/maxtext/logs

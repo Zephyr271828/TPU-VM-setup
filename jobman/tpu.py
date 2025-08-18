@@ -221,11 +221,11 @@ class TPU:
                     self.name, "--zone", self.zone, "--quiet"
                 ]
                 if subprocess.run(cmd, check=True).returncode == 0:
-                    self.logger.info("Queued resource deleted.")
+                    self.logger.info("Queued resources deleted.")
                 else:
-                    self.logger.warning("Failed to delete queued resource (might already be gone).")
+                    self.logger.warning("No Queued resources to delete or deletion failed (possibly already gone).")
             else:
-                self.logger.info("Queued resource not found. Skipping deletion.")
+                self.logger.info("Queued resources not found. Skipping deletion.")
             
     
 if __name__ == '__main__':
