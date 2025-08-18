@@ -2,7 +2,7 @@ import sys
 import logging
 from pathlib import Path
 
-def setup_logger(log_file: Path = None, level=logging.INFO, stdout=False):
+def setup_logger(log_file: Path = None, level=logging.DEBUG, stdout=False):
     """Configure global logging to stdout and/or a log file."""
     # Get root logger
     logger = logging.getLogger()

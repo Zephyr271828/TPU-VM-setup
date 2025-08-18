@@ -45,7 +45,8 @@ docker:
     - /home/zephyr
     - /dev
     - /run
-    # - /home/zephyr/.ssh:/root/.ssh
+    - /home/zephyr/.config/gcloud:/root/.config/gcloud
+    - /home/zephyr/.ssh:/root/.ssh
   workdir: /home/zephyr
   flags: ["--privileged", "--network=host"]
 

@@ -51,6 +51,10 @@ class COMMAND:
 
     def run(self):
         self.logger.info(f"Launching command on workers: {self.workers}")
+        if self.full_cmd is None:
+            self.full_cmd = self.base_cmd
+        self.logger.debug("Executing command:")
+        self.logger.debug(self.full_cmd) 
         all_success = True
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.workers)) as executor:
@@ -67,11 +71,7 @@ class COMMAND:
         return all_success
     
     def run_worker(self, i):
-        if self.full_cmd is None:
-            self.full_cmd = self.base_cmd
-        self.logger.info(f"Worker {i}: Launching command")
-        self.logger.debug("Executing command:")
-        self.logger.debug(self.full_cmd)    
+        self.logger.info(f"Worker {i}: Launching command")  
 
         ssh_cmd = [
             "gcloud", "alpha", "compute", "tpus", "tpu-vm", "ssh", self.cfg.tpu.name,

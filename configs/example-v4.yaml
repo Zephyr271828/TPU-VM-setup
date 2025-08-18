@@ -1,7 +1,7 @@
 job:
   name: test-v4
   env_type: docker
-  loop: False
+  loop: true
 
 tpu:
   allocation_mode: "queued-resources"    # tpu-vm | queued-resources
@@ -45,7 +45,8 @@ docker:
     - /home/zephyr
     - /dev
     - /run
-    # - /home/zephyr/.ssh:/root/.ssh
+    - /home/zephyr/.config/gcloud:/root/.config/gcloud
+    - /home/zephyr/.ssh:/root/.ssh
   workdir: /home/zephyr
   flags: ["--privileged", "--network=host"]
 

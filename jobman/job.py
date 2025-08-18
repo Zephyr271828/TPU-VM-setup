@@ -97,9 +97,10 @@ class Job:
 
             except Exception as e:
                 self.logger.exception(f"Job failed with error: {e}")
-                if not self.loop:
-                    return False
-                self.logger.info("Retrying job due to error...")
+            
+            if not self.loop:
+                return False
+            self.logger.info("Retrying job due to error...")
             
     def delete(self):
         self.logger = setup_logger(stdout=True)
