@@ -10,7 +10,7 @@ pip install -e .
 ## TLDR?
 Try the following for quick start!
 ```
-jobman create --config=configs/quick-start.yaml
+jobman create configs/quick-start.yaml
 ```
 ### Basic Commands
 | Purpose | Command |
