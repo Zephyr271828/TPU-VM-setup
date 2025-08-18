@@ -12,12 +12,12 @@ class SSH:
         
         self.cfg = cfg
         self.private_key = Path(self.cfg.ssh.private_key).expanduser()
-        self.public_key = Path(self.cfg.ssh.public_key).expanduser()
+        self.identities = self.cfg.ssh.identities
         
         self.logger = setup_logger(log_file=cfg.job.dir / 'logs' / 'job.log')
         
     def setup(self):
-        self.logger.info(f"Copying SSH keys to TPU workers: private={str(self.private_key)}, public={str(self.public_key)}")
+        self.logger.info(f"Copying SSH keys to TPU workers...")
 
         any_failed = False
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.cfg.tpu.num_workers) as executor:
@@ -35,18 +35,43 @@ class SSH:
         
     def setup_worker(self, i):
         self.logger.info(f"Worker {i}: Setting up SSH")
-        key_filename = self.private_key.name
         log_file = self.cfg.job.dir / "logs" / f"ssh_worker_{i}.log"
-
-        if not self.private_key.exists() or not self.public_key.exists():
-            self.logger.error(f"SSH key files not found: {self.private_key} or {self.public_key}")
-            return
+        ssh_setup_cmds = [
+            "mkdir -p ~/.ssh",
+            "chmod 700 ~/.ssh"
+        ]
+        combined_config = ""
         
         with open(log_file, "w") as f:
-            for key_file in (self.private_key, self.public_key):
-                self._copy_key_to_worker(i, key_file, f)
+            for entry in self.identities:
+                priv = Path(entry.private_key).expanduser()
+                pub = Path(entry.public_key).expanduser()
+                config_entry = dedent(entry.config_entry).strip()
 
-            self._configure_remote_ssh(i, key_filename, f)
+                if not priv.exists() or not pub.exists():
+                    self.logger.error(f"SSH key not found: {priv} or {pub}")
+                    continue
+
+                self._copy_key_to_worker(i, priv, f)
+                self._copy_key_to_worker(i, pub, f)
+
+                ssh_setup_cmds += [
+                    f"chmod 600 ~/.ssh/{priv.name}",
+                    f"chmod 644 ~/.ssh/{pub.name}",
+                ]
+                
+                combined_config += config_entry + "\n\n"
+            
+            if combined_config:
+                escaped_config = combined_config.strip().replace('"', '\\"').replace('\n', '\\n')
+                ssh_setup_cmds += [
+                    f'printf "{escaped_config}\\n" > ~/.ssh/config',
+                    'chmod 600 ~/.ssh/config'
+                ]
+
+            cmd = " && ".join(ssh_setup_cmds)
+            self.logger.debug(f"Worker {i}: Running SSH config cmd: {cmd}")
+            self._configure_remote_ssh(i, cmd, f)
         
     def _copy_key_to_worker(self, i, key_file, f):
         target_path = f"{self.cfg.tpu.name}:~/.ssh/{key_file.name}"
@@ -67,22 +92,7 @@ class SSH:
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Worker {i}: Failed to copy {key_file.name}: {e}")
             
-    def _configure_remote_ssh(self, i, key_filename, f):
-        ssh_config_entry = dedent(f"""\
-            Host 10.*
-                IdentityFile ~/.ssh/{key_filename}
-                IdentitiesOnly yes
-        """)
-        escaped_entry = ssh_config_entry.replace('\n', '\\n').replace('"', '\\"')
-        cmd = f"""
-            mkdir -p ~/.ssh;
-            chmod 700 ~/.ssh;
-            cat ~/.ssh/{key_filename}.pub >> ~/.ssh/authorized_keys;
-            printf \"{escaped_entry}\\n\" >> ~/.ssh/config;
-            chmod 600 ~/.ssh/authorized_keys;
-            chmod 600 ~/.ssh/{key_filename};
-            chmod 644 ~/.ssh/{key_filename}.pub;
-        """
+    def _configure_remote_ssh(self, i, cmd, f):
         ssh_cmd = [
             "gcloud", "alpha", "compute", "tpus", "tpu-vm", "ssh", self.cfg.tpu.name,
             "--worker", str(i), "--zone", self.cfg.tpu.zone,

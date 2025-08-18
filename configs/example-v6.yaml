@@ -24,7 +24,20 @@ gcsfuse:
 
 ssh:
   private_key: ~/.ssh/id_rsa
-  public_key: ~/.ssh/id_rsa.pub
+  identities:
+    - private_key: ~/.ssh/id_rsa
+      public_key: ~/.ssh/id_rsa.pub
+      config_entry: | 
+        Host 10.*
+          IdentityFile ~/.ssh/id_rsa
+          IdentitiesOnly yes
+    - private_key: ~/.ssh/id_ed25519_github
+      public_key: ~/.ssh/id_ed25519_github.pub
+      config_entry: |
+        Host github.com
+          User git
+          IdentityFile ~/.ssh/id_ed25519_github
+          IdentitiesOnly yes
 
 docker:
   image: yx3038/maxtext_base_image:latest

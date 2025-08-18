@@ -230,12 +230,20 @@ class JobMan:
         print(tabulate(rows, headers=headers, tablefmt="fancy_grid"))
     
     def _load(self):
-        if self.meta_file.exists():
-            return json.loads(self.meta_file.read_text())
-        return {}
+        with open(self.lock_file, "r+") as lock_fp:
+            fcntl.flock(lock_fp, fcntl.LOCK_EX)
+            if self.meta_file.exists():
+                data = json.loads(self.meta_file.read_text())
+            else:
+                data = {}
+            fcntl.flock(lock_fp, fcntl.LOCK_UN)
+            return data
 
     def _save(self):
-        self.meta_file.write_text(json.dumps(self.meta, indent=2))    
+        with open(self.lock_file, "r+") as lock_fp:
+            fcntl.flock(lock_fp, fcntl.LOCK_EX)
+            self.meta_file.write_text(json.dumps(self.meta, indent=2))
+            fcntl.flock(lock_fp, fcntl.LOCK_UN)
     
     def get_job_meta(self, job_id):
         return self.meta.get(f"job_{job_id}", None)
