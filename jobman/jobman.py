@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import datetime 
 from tabulate import tabulate
 from omegaconf import OmegaConf
+from contextlib import contextmanager
 
 from jobman.job import Job
 from jobman.utils import setup_logger
@@ -42,20 +43,34 @@ class JobMan:
         self.meta_file = jobman_dir / "meta.json"
         self.lock_file = jobman_dir / "lock"
         self.cntr_file = jobman_dir / "next_job_id.txt"
-        self.meta = self._load()
         self.logger = setup_logger(stdout=True)
         
+    @contextmanager
+    def with_meta_lock(self):
+        with open(self.lock_file, "w") as lock_fp:
+            fcntl.flock(lock_fp, fcntl.LOCK_EX)
+            try:
+                if self.meta_file.exists():
+                    meta = json.loads(self.meta_file.read_text())
+                else:
+                    meta = {}
+                yield meta
+                # Write back updated meta
+                self.meta_file.write_text(json.dumps(meta, indent=2))
+            finally:
+                fcntl.flock(lock_fp, fcntl.LOCK_UN)
+            
     def create_job(self, config_path):
         job_id = self.get_next_job_id()
         job_dir = Path(f"jobs/{job_id}")
         job_dir.mkdir(parents=True, exist_ok=True)
         
-        self.meta[f"job_{job_id}"] = {
-            "job_id": job_id,
-            "created_at": datetime.now().isoformat(),
-            "status": "INIT"
-        }
-        self._save()
+        with self.with_meta_lock() as meta:
+            meta[f"job_{job_id}"] = {
+                "job_id": job_id,
+                "created_at": datetime.now().isoformat(),
+                "status": "INIT"
+            }
         
         cfg = OmegaConf.load(config_path)
         cfg.job.id = job_id
@@ -116,13 +131,15 @@ class JobMan:
     
     def cancel_job(self, job_id):
         key = f"job_{job_id}"
-        meta = self.meta.get(key)
+        
+        with self.with_meta_lock() as meta:
+            job_meta = meta.get(key)
 
-        if not meta:
+        if not job_meta:
             self.logger.warning(f"No metadata found for job {job_id}")
             return False
 
-        session_name = meta.get("session_name")
+        session_name = job_meta.get("session_name")
         if not session_name:
             self.logger.error(f"No tmux session_name found for job {job_id}")
             return False
@@ -181,83 +198,65 @@ class JobMan:
     
     def list_jobs(self):
         rows = []
-        updated = False
         
-        for job_key, meta in self.meta.items():
-            job_id = meta.get("job_id")
-            
-            started = meta.get("started_at", meta.get("created_at", "N/A"))
-            session_name = meta.get("session_name", f"job_{job_id}")
-
-            config_path = Path(f"jobs/{job_id}/config.yaml")
-            if config_path.exists():
-                cfg = OmegaConf.load(config_path)
-                job_name = cfg.job.name
-                accelerator = cfg.tpu.accelerator
-                zone = cfg.tpu.zone
-                try:
-                    for ip_entry in cfg.tpu.ips:
-                        if ip_entry.worker == 0:
-                            host0_ip = ip_entry.get("external_ip", "N/A")
-                            break
-                except:
-                    host0_ip = "N/A"
-            else:
-                job_name = accelerator = zone = host0_ip = "N/A"
+        with self.with_meta_lock() as meta:
+            for job_key, meta in meta.items():
+                job_id = meta.get("job_id")
                 
-            if self.check_tmux_session(session_name):
-                status = "RUNNING"
-            else:
-                ping_result = subprocess.run(
-                    ["ping", "-c", "1", "-W", "1", host0_ip],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL
-                )
-                if ping_result.returncode == 0:
-                    meta["status"] = status = "IDLE" 
+                started = meta.get("started_at", meta.get("created_at", "N/A"))
+                session_name = meta.get("session_name", f"job_{job_id}")
+
+                config_path = Path(f"jobs/{job_id}/config.yaml")
+                if config_path.exists():
+                    cfg = OmegaConf.load(config_path)
+                    job_name = cfg.job.name
+                    accelerator = cfg.tpu.accelerator
+                    zone = cfg.tpu.zone
+                    try:
+                        for ip_entry in cfg.tpu.ips:
+                            if ip_entry.worker == 0:
+                                host0_ip = ip_entry.get("external_ip", "N/A")
+                                break
+                    except:
+                        host0_ip = "N/A"
                 else:
-                    meta["status"] = status = "DEAD"
-                    meta["ended_at"] = datetime.now().isoformat()
-                updated = True
+                    job_name = accelerator = zone = host0_ip = "N/A"
+                    
+                if self.check_tmux_session(session_name):
+                    status = "RUNNING"
+                else:
+                    ping_result = subprocess.run(
+                        ["ping", "-c", "1", "-W", "1", host0_ip],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL
+                    )
+                    if ping_result.returncode == 0:
+                        meta["status"] = status = "IDLE" 
+                    else:
+                        meta["status"] = status = "DEAD"
+                        meta["ended_at"] = datetime.now().isoformat()
+                    updated = True
 
-            rows.append([job_id, job_name, started, accelerator, zone, host0_ip, status])
-
-        if updated:
-            self._save()
+                rows.append([job_id, job_name, started, accelerator, zone, host0_ip, status])
+            
+            rows.sort(key=lambda x: x[0])
+            headers = ["Job ID", "Name", "Start Time", "Accelerator", "Zone", "Host0 IP", "Status"]
+            print(tabulate(rows, headers=headers, tablefmt="fancy_grid"))
         
-        rows.sort(key=lambda x: x[0])
-        headers = ["Job ID", "Name", "Start Time", "Accelerator", "Zone", "Host0 IP", "Status"]
-        print(tabulate(rows, headers=headers, tablefmt="fancy_grid"))
-    
-    def _load(self):
-        with open(self.lock_file, "r+") as lock_fp:
-            fcntl.flock(lock_fp, fcntl.LOCK_EX)
-            if self.meta_file.exists():
-                data = json.loads(self.meta_file.read_text())
-            else:
-                data = {}
-            fcntl.flock(lock_fp, fcntl.LOCK_UN)
-            return data
-
-    def _save(self):
-        with open(self.lock_file, "r+") as lock_fp:
-            fcntl.flock(lock_fp, fcntl.LOCK_EX)
-            self.meta_file.write_text(json.dumps(self.meta, indent=2))
-            fcntl.flock(lock_fp, fcntl.LOCK_UN)
-    
     def get_job_meta(self, job_id):
-        return self.meta.get(f"job_{job_id}", None)
+        with self.with_meta_lock() as meta:
+            return meta.get(f"job_{job_id}", None)
 
     def update_job_meta(self, job_id, **kwargs):
-        key = f"job_{job_id}"
-        if key not in self.meta:
-            self.meta[key] = {"job_id": job_id}
-        self.meta[key].update(kwargs)
-        self.meta[key]["last_seen"] = datetime.now().isoformat()
-        self._save()
+        with self.with_meta_lock() as meta:
+            key = f"job_{job_id}"
+            if key not in meta:
+                meta[key] = {"job_id": job_id}
+            meta[key].update(kwargs)
+            meta[key]["last_seen"] = datetime.now().isoformat()
 
     def remove_job_meta(self, job_id):
-        key = f"job_{job_id}"
-        if key in self.meta:
-            del self.meta[key]
-            self._save()
+        with self.with_meta_lock() as meta:
+            key = f"job_{job_id}"
+            if key in meta:
+                del meta[key]
