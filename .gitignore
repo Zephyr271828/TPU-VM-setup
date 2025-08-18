@@ -2,3 +2,4 @@
 *.egg-info
 jobs/
 jobman-legacy/
+**/.DS_Store
