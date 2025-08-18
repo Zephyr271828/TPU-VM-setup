@@ -21,7 +21,7 @@ class SSH:
 
         any_failed = False
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.cfg.tpu.num_workers) as executor:
-            futures = [executor.submit(self.setup_worker, i) for i in range(self.cfg.tpu.num_workers)]
+            futures = [executor.submit(self._setup_worker, i) for i in range(self.cfg.tpu.num_workers)]
             for future in concurrent.futures.as_completed(futures):
                 if exc := future.exception():
                     self.logger.error(f"Worker SSH thread failed: {exc}")
@@ -33,7 +33,7 @@ class SSH:
             self.logger.info("SSH setup completed successfully on all workers.")
         return not any_failed
         
-    def setup_worker(self, i):
+    def _setup_worker(self, i):
         self.logger.info(f"Worker {i}: Setting up SSH")
         log_file = self.cfg.job.dir / "logs" / f"ssh_worker_{i}.log"
         ssh_setup_cmds = [
@@ -109,9 +109,9 @@ class SSH:
         except subprocess.CalledProcessError as e:
             self.logger.error(f"Worker {i}: Remote SSH config failed: {e}")
             
-    def test(self):
-        pass
-    
+    def _check_worker(self, i):
+        raise NotImplementedError
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--job-id", required=True)

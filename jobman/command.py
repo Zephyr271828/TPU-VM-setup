@@ -67,7 +67,11 @@ class COMMAND:
         return all_success
     
     def run_worker(self, i):
+        if self.full_cmd is None:
+            self.full_cmd = self.base_cmd
         self.logger.info(f"Worker {i}: Launching command")
+        self.logger.debug("Executing command:")
+        self.logger.debug(self.full_cmd)    
 
         ssh_cmd = [
             "gcloud", "alpha", "compute", "tpus", "tpu-vm", "ssh", self.cfg.tpu.name,
@@ -77,7 +81,7 @@ class COMMAND:
             "--ssh-flag=-o ConnectTimeout=15",
             "--ssh-flag=-o StrictHostKeyChecking=no",
             "--ssh-flag=-o UserKnownHostsFile=/dev/null",
-            "--command", self.full_cmd if self.full_cmd else self.base_cmd,
+            "--command", self.full_cmd,
             "--quiet",
         ]
 

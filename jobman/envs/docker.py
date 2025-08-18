@@ -19,11 +19,11 @@ class DOCKER(ENV):
         self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
         
     def setup(self):
-        self.logger.info(f"Setting up Docker on TPU workers: image={self.image}")
+        self.logger.info(f"Setting up Docker on TPU workers...")
         
         any_failed = False
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.cfg.tpu.num_workers) as executor:
-            futures = [executor.submit(self.setup_worker, i) for i in range(self.cfg.tpu.num_workers)]
+            futures = [executor.submit(self._setup_worker, i) for i in range(self.cfg.tpu.num_workers)]
             for future in concurrent.futures.as_completed(futures):
                 if exc := future.exception():
                     self.logger.error(f"Worker thread failed: {exc}")
@@ -35,7 +35,11 @@ class DOCKER(ENV):
             self.logger.info("GCSFuse setup completed successfully on all workers.")
         return not any_failed
     
-    def setup_worker(self, i):
+    def _setup_worker(self, i):
+        if self._check_worker(i):
+            self.logger.info(f"Worker {i}: Docker image {self.image} already exists.")
+            return
+        
         self.logger.info(f"Worker {i}: Setting up Docker...")
         log_file = self.cfg.job.dir / "logs"  / f"docker_worker_{i}.log"
 
@@ -69,6 +73,31 @@ class DOCKER(ENV):
             except Exception as e:
                 self.logger.error(f"Worker {i} setup failed: {e}")
                 raise
+            
+    def _check_worker(self, i):
+        self.logger.info(f"Worker {i}: Checking Docker image...")
+        log_file = self.cfg.job.dir / "logs" / f"docker_worker_{i}.log"
+        with open(log_file, "w") as f:
+            try:
+                check_cmd = [
+                    "gcloud", "alpha", "compute", "tpus", "tpu-vm", "ssh", self.cfg.tpu.name,
+                    "--zone", self.cfg.tpu.zone,
+                    f"--worker={i}",
+                    "--command", f"docker image inspect {self.image}",
+                    f"--ssh-key-file={self.cfg.ssh.private_key}",
+                    "--ssh-flag=-o ConnectTimeout=15",
+                    "--ssh-flag=-o StrictHostKeyChecking=no",
+                    "--ssh-flag=-o UserKnownHostsFile=/dev/null",
+                    "--quiet",
+                ]
+                if subprocess.run(check_cmd, check=True, stdout=f, stderr=f).returncode == 0:
+                    return True
+                else:   
+                    self.logger.warning(f"Worker {i}: Docker image {self.image} not found")
+                    return False
+            except subprocess.CalledProcessError as e:
+                # self.logger.error(f"Worker {i}: Error checking Docker image: {e}")
+                return False
         
     def patch_command(self, cmd):
 

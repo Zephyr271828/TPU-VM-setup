@@ -17,7 +17,7 @@ class CONDA(ENV):
         self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
 
     def setup(self):
-        self.logger.info(f"Setting up Conda environment on TPU workers: env_name={self.env_name}, config_file={self.config_file}")
+        self.logger.info(f"Setting up Conda environment on TPU workers...")
 
         any_failed = False
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.cfg.tpu.num_workers) as executor:
@@ -34,6 +34,10 @@ class CONDA(ENV):
         return not any_failed
 
     def setup_worker(self, i):
+        if self._check_worker(i):
+            self.logger.info(f"Worker {i}: Conda already set up.")
+            return
+        
         self.logger.info(f"Worker {i}: Setting up Conda...")
         log_file = self.cfg.job.dir / "logs" / f"conda_worker_{i}.log"
 
@@ -82,6 +86,10 @@ class CONDA(ENV):
             except Exception as e:
                 self.logger.error(f"Worker {i} Conda setup failed: {e}")
                 raise
+    
+    def _check_worker(self, i):
+        self.logger.info(f"Worker {i}: Checking Conda setup...")
+        return False
 
     def patch_command(self, cmd):
         return f'conda run -n {self.env_name} bash -c "{cmd}"'

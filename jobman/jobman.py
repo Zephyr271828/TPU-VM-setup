@@ -68,8 +68,7 @@ class JobMan:
         with self.with_meta_lock() as meta:
             meta[f"job_{job_id}"] = {
                 "job_id": job_id,
-                "created_at": datetime.now().isoformat(),
-                "status": "INIT"
+                "created_at": datetime.now().isoformat()
             }
         
         cfg = OmegaConf.load(config_path)
@@ -223,7 +222,7 @@ class JobMan:
                     job_name = accelerator = zone = host0_ip = "N/A"
                     
                 if self.check_tmux_session(session_name):
-                    status = "RUNNING"
+                    status = "QUEUEING" if host0_ip == "N/A" else "RUNNING"
                 else:
                     ping_result = subprocess.run(
                         ["ping", "-c", "1", "-W", "1", host0_ip],
@@ -231,11 +230,10 @@ class JobMan:
                         stderr=subprocess.DEVNULL
                     )
                     if ping_result.returncode == 0:
-                        meta["status"] = status = "IDLE" 
+                        status = "IDLE" 
                     else:
-                        meta["status"] = status = "DEAD"
+                        status = "DEAD"
                         meta["ended_at"] = datetime.now().isoformat()
-                    updated = True
 
                 rows.append([job_id, job_name, started, accelerator, zone, host0_ip, status])
             

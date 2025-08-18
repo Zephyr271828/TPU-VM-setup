@@ -91,8 +91,9 @@ remote_cmd = f"""
     """
 ```
 
-## Other Resources.
-The design concept of JOBMAN is somewhat complex, but it aims to provide easiest user interface. For a simpler workaround, you may refer to `scripts/ultra_create_tpu.sh` by Peter Tong.
+## Other Resources
+The design concept of JOBMAN is somewhat complex, but it aims to provide the easiest user interface s.t. user unfamiliar with TPU can quickly get started.  
+For a simpler setup tool, you may refer to `scripts/ultra_create_tpu.sh` by Peter Tong.
 
 ## Dashboard
 Coming soon

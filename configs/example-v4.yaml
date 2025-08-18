@@ -1,15 +1,15 @@
 job:
-  name: test-v6
+  name: test-v4
   env_type: docker
   loop: False
 
 tpu:
   allocation_mode: "queued-resources"    # tpu-vm | queued-resources
-  accelerator: v6e-4
+  accelerator: v4-64
   name: yufeng-${tpu.accelerator}
-  zone: us-east1-d
-  version: v2-alpha-tpuv6e
-  pricing: spot                   
+  zone: us-central2-b
+  version: tpu-ubuntu2204-base
+  pricing: spot
   # spot | ondemand | preemptible
   startup_script: null
   tags: ["jobman", "experiment"]
@@ -19,7 +19,7 @@ tpu:
     purpose: "testing jobman"
 
 gcsfuse:
-  bucket_name: llm_pruning_us_east1_d
+  bucket_name: llm_pruning_us_central2_b
   mount_path: /home/zephyr/gcs-bucket
 
 ssh:
@@ -62,19 +62,14 @@ command:
   cmd: |
     # pip show jax
     # pip show flax
+    rm -rf /home/zephyr/maxtext
+    cp -r /home/zephyr/gcs-bucket/maxtext /home/zephyr/maxtext
+    mkdir -p /home/zephyr/maxtext/logs
 
-    # rm -rf /home/zephyr/maxtext
-    # cp -r /home/zephyr/gcs-bucket/maxtext /home/zephyr/maxtext
-    # mkdir -p /home/zephyr/maxtext/logs
-
-    # gcloud config set project vision-mix
-    # gcloud config set compute/zone ${tpu.zone}
-    # export TPU_PREFIX=${tpu.name}
-    # export BUCKET_NAME=${gcsfuse.bucket_name}
-    # cd /home/zephyr/maxtext
-    # bash scripts/llama3.1_4b_width_S50.sh
-
-    pip install torch
-    cd /home/zephyr/gcs-bucket/maxtext
-    bash tests/test_eq.sh    
+    gcloud config set project vision-mix
+    gcloud config set compute/zone ${tpu.zone}
+    export TPU_PREFIX=${tpu.name}
+    export BUCKET_NAME=${gcsfuse.bucket_name}
+    cd /home/zephyr/maxtext
+    bash scripts/llama3.1_4b_width_S50.sh
   workers: [0] # int | list | "all"

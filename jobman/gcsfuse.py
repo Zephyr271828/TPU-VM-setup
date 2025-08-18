@@ -15,7 +15,7 @@ class GCSFUSE:
         self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
         
     def setup(self):
-        self.logger.info(f"Setting up GCSFuse and mounting bucket to TPU workers: bucket={self.bucket}, mount={self.mount_path}")
+        self.logger.info(f"Setting up GCSFuse and mounting bucket to TPU workers...")
 
         if not self.bucket or not self.mount_path:
             self.logger.error("GCSFuse config missing `bucket_name` or `mount_path`.")
@@ -23,7 +23,7 @@ class GCSFUSE:
         
         any_failed = False
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.cfg.tpu.num_workers) as executor:
-            futures = [executor.submit(self.setup_worker, i) for i in range(self.cfg.tpu.num_workers)]
+            futures = [executor.submit(self._setup_worker, i) for i in range(self.cfg.tpu.num_workers)]
             for future in concurrent.futures.as_completed(futures):
                 if exc := future.exception():
                     self.logger.error(f"Worker thread failed: {exc}")
@@ -35,7 +35,11 @@ class GCSFUSE:
             self.logger.info("GCSFuse setup completed successfully on all workers.")
         return not any_failed
 
-    def setup_worker(self, i):
+    def _setup_worker(self, i):
+        if self._check_worker(i):
+            self.logger.info(f"Worker {i}: GCSFuse already set up and bucket mounted.")
+            return
+        
         self.logger.info(f"Worker {i}: Setting up GCSFuse...")
         log_file = self.cfg.job.dir / "logs" / f"gcsfuse_worker_{i}.log"
 
@@ -47,6 +51,16 @@ class GCSFUSE:
 
             echo '[INFO] Downloading GPG key...'
             sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo tee /usr/share/keyrings/cloud.google.asc >/dev/null
+
+            if sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; then
+                LOCK_PID=$(sudo lsof -t /var/lib/dpkg/lock-frontend || true)
+                if [ -n "$LOCK_PID" ]; then
+                    echo "[WARN] Killing process $LOCK_PID holding dpkg lock"
+                    sudo kill -9 $LOCK_PID
+                    sleep 2
+                fi
+            fi
+            # This is needed because sometimes the lock is occupied and installation fails
 
             echo '[INFO] Updating packages and installing gcsfuse...'
             sudo apt-get update -y && sudo apt-get install -y gcsfuse
@@ -85,8 +99,30 @@ class GCSFUSE:
             except subprocess.CalledProcessError as e:
                 self.logger.error(f"Worker {i}: GCSFuse setup failed: {e}")
 
-    def test(self):
-        pass
+    def _check_worker(self, i):
+        self.logger.info(f"Worker {i}: Checking GCSFuse...")
+        log_file = self.cfg.job.dir / "logs" / f"gcsfuse_worker_{i}.log"
+        cmd = f"which gcsfuse && mount | grep {self.mount_path} && test -n \"$(ls -A {self.mount_path} 2>/dev/null)\""
+        with open(log_file, "w") as f:
+            try:
+                check_cmd = [
+                    "gcloud", "alpha", "compute", "tpus", "tpu-vm", "ssh", self.cfg.tpu.name,
+                    "--zone", self.cfg.tpu.zone,
+                    f"--worker={i}",
+                    "--command", cmd,
+                    f"--ssh-key-file={self.cfg.ssh.private_key}",
+                    "--ssh-flag=-o ConnectTimeout=15",
+                    "--ssh-flag=-o StrictHostKeyChecking=no",
+                    "--ssh-flag=-o UserKnownHostsFile=/dev/null",
+                    "--quiet",
+                ]
+                if subprocess.run(check_cmd, check=True, stdout=f, stderr=f).returncode == 0:
+                    return True
+                else:   
+                    return False
+            except subprocess.CalledProcessError as e:
+                # self.logger.error(f"Worker {i}: Error checking GCSFuse: {e}")
+                return False
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
