@@ -18,8 +18,8 @@ jobman create configs/quick-start.yaml
 | Create a new job | `jobman create <config_path>` |
 | Check all jobs status | `jobman list` |
 | Cancel and delete a specific job | `jobman delete <job_id>` |
-| Run setup on a specific job | e.g: `python -m jobman.envs.docker --job-id=<job_id>` |
-| Run command on a specific job | e.g: `python -m jobman.job --job-id=<job_id> --cmd-only` |
+| Run setup on a specific job | e.g: `python -m jobman.envs.docker <job_id>` |
+| Run command on a specific job | e.g: `python -m jobman.job <job_id> --cmd-only` |
 
 ## Overall Structure
 JOBMAN treats each job instance as a directory in `jobs/<job_id>`. During the creation of the job, information including IP addresses, config snapshot, start time and life cycle will be saved to this directory. TPU request logs, setup logs, and main command logs will be available at `jobs/<job_id>/logs`. For instance, you can find host 0 gcsfuse setup log at `jobs/<job_id>/logs/gcsfuse_worker_0.log`. 
@@ -98,7 +98,7 @@ The design concept of JOBMAN is somewhat complex, but it aims to provide the eas
 For a simpler setup tool, you may refer to `other_resources/ultra_create_tpu.sh` by Peter Tong.
 
 ### Slack Chatbot
-Boyang Zheng has also developed a brilliant Slack Chatbot that 1) automatically deletes dead tpu vms 2) summarizes daily usage and sends to their Slack Channel. You amy refer to it at `other_resources/slack_chatbot`.
+Boyang Zheng has also developed a brilliant Slack Chatbot that 1) automatically deletes dead tpu vms 2) profiles daily usage and sends to their Slack Channel. You may refer to it at `other_resources/slack_chatbot`.
 
 ## Dashboard
 Coming soon

@@ -96,7 +96,7 @@ class CONDA(ENV):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--job-id", required=True)
+    parser.add_argument("job_id")
     args = parser.parse_args()
 
     cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")

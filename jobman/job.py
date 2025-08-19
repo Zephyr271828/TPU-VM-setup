@@ -121,7 +121,7 @@ class Job:
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--job-id", required=True)
+    parser.add_argument("job_id")
     parser.add_argument('--cmd-only', action='store_true', help='Run the main command only')
     args = parser.parse_args()
 
