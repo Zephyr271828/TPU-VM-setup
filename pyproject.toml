@@ -15,6 +15,7 @@ dependencies = [
     "uvicorn",
     "pydantic",
     "streamlit"
+    "gcloud"
 ]
 
 [project.scripts]

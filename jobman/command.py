@@ -86,7 +86,7 @@ class COMMAND:
         ]
 
         log_file = self.cfg.job.dir / "logs" / f"main_command_worker_{i}.log"
-        with open(log_file, "w") as f:
+        with open(log_file, "a") as f:
             result = subprocess.run(ssh_cmd, stdout=f, stderr=f)
             if result.returncode != 0:
                 self.logger.error(f"Worker {i}: command failed.")

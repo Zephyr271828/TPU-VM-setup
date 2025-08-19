@@ -41,6 +41,8 @@ ssh:
 
 docker:
   image: yx3038/maxtext_base_image:latest
+  env_vars:
+    - HOME=/home/zephyr
   mount_dirs:
     - /home/zephyr
     - /dev
@@ -61,6 +63,7 @@ venv:
 
 command:
   cmd: |
+
     # pip show jax
     # pip show flax
     rm -rf /home/zephyr/maxtext
