@@ -1,0 +1,5 @@
+slack_sdk
+google-cloud-storage
+google-cloud-tpu
+google-api-python-client
+google_auth_oauthlib

@@ -1,0 +1,6 @@
+__pycache__/
+results/
+credentials.json
+gs_credentials.json
+tokens.json
+watchlist.db
