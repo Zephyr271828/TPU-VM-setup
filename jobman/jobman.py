@@ -10,6 +10,7 @@ from datetime import datetime
 from tabulate import tabulate
 from omegaconf import OmegaConf
 from contextlib import contextmanager
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from jobman.job import Job
 from jobman.utils import setup_logger
@@ -107,7 +108,7 @@ class JobMan:
         config_path = job_dir / "config.yaml"
         run_cmd = f"python -m jobman.job {job_id}"
 
-        tmux_cmd = f'tmux new-session -d -s {session_name} "{run_cmd} | tee {log_file}"'
+        tmux_cmd = f'tmux new-session -d -s {session_name} "{run_cmd} | tee -a {log_file}"'
         subprocess.run(tmux_cmd, shell=True, check=True)
 
         self.update_job_meta(
@@ -197,49 +198,63 @@ class JobMan:
     
     def list_jobs(self):
         rows = []
-        
+
         with self.with_meta_lock() as meta:
-            for job_key, meta in meta.items():
-                job_id = meta.get("job_id")
-                
-                started = meta.get("started_at", meta.get("created_at", "N/A"))
-                session_name = meta.get("session_name", f"job_{job_id}")
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                futures = {
+                    executor.submit(self.fetch_job_info, metadata): job_key
+                    for job_key, metadata in meta.items()
+                }
 
-                config_path = Path(f"jobs/{job_id}/config.yaml")
-                if config_path.exists():
-                    cfg = OmegaConf.load(config_path)
-                    job_name = cfg.job.name
-                    accelerator = cfg.tpu.accelerator
-                    zone = cfg.tpu.zone
-                    try:
-                        for ip_entry in cfg.tpu.ips:
-                            if ip_entry.worker == 0:
-                                host0_ip = ip_entry.get("external_ip", "N/A")
-                                break
-                    except:
-                        host0_ip = "N/A"
-                else:
-                    job_name = accelerator = zone = host0_ip = "N/A"
-                    
-                if self.check_tmux_session(session_name):
-                    status = "QUEUEING" if host0_ip == "N/A" else "RUNNING"
-                else:
-                    ping_result = subprocess.run(
-                        ["ping", "-c", "1", "-W", "1", host0_ip],
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
-                    if ping_result.returncode == 0:
-                        status = "IDLE" 
-                    else:
-                        status = "DEAD"
-                        meta["ended_at"] = datetime.now().isoformat()
+                for future in as_completed(futures):
+                    rows.append(future.result())
 
-                rows.append([job_id, job_name, started, accelerator, zone, host0_ip, status])
+        rows.sort(key=lambda x: x[0])
+        headers = ["Job ID", "Name", "Start Time", "Accelerator", "Zone", "Host0 IP", "Status"]
+        print(tabulate(rows, headers=headers, tablefmt="fancy_grid"))
             
-            rows.sort(key=lambda x: x[0])
-            headers = ["Job ID", "Name", "Start Time", "Accelerator", "Zone", "Host0 IP", "Status"]
-            print(tabulate(rows, headers=headers, tablefmt="fancy_grid"))
+    def fetch_job_info(self, meta):
+        try:
+            job_id = meta.get("job_id")
+             
+            started = meta.get("started_at", meta.get("created_at", "N/A"))
+            session_name = meta.get("session_name", f"job_{job_id}")
+
+            config_path = Path(f"jobs/{job_id}/config.yaml")
+            if config_path.exists():
+                cfg = OmegaConf.load(config_path)
+                job_name = cfg.job.name
+                accelerator = cfg.tpu.accelerator
+                zone = cfg.tpu.zone
+                try:
+                    host0_ip = next(ip.get("external_ip", "N/A") for ip in cfg.tpu.ips if ip.worker == 0)
+                except Exception:
+                    host0_ip = "N/A"
+            else:
+                job_name = accelerator = zone = host0_ip = "N/A"
+                cfg = None
+
+            if self.check_tmux_session(session_name):
+                status = "QUEUEING" if host0_ip == "N/A" else "RUNNING"
+            elif cfg:
+                try:
+                    result = subprocess.run(
+                        [
+                            "gcloud", "alpha", "compute", "tpus", "tpu-vm", "describe",
+                            cfg.tpu.name, "--zone", cfg.tpu.zone, "--format=value(state)"
+                        ],
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                    )
+                    gcloud_state = result.stdout.strip()
+                    status = "IDLE" if gcloud_state in {"READY", "ACTIVE"} else "DEAD"
+                except Exception:
+                    status = "UNKNOWN"
+            else:
+                status = "UNKNOWN"
+
+            return [job_id, job_name, started, accelerator, zone, host0_ip, status]
+        except Exception as e:
+            return [job_id, "ERROR", "ERROR", "ERROR", "ERROR", "ERROR", f"ERROR: {e}"]
         
     def get_job_meta(self, job_id):
         with self.with_meta_lock() as meta:

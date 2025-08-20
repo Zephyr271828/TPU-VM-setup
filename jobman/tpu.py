@@ -82,7 +82,7 @@ class TPU:
                 self.logger.warning("TPU failed to become ready. Deleting...")
                 self.delete()
         elif status in {"NOT FOUND"}:
-            pass
+            self.delete()
         else:
             self.logger.error(f"Unexpected TPU status: {status}. Deleting as precaution.")
             self.delete()

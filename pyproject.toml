@@ -7,15 +7,17 @@ authors = [{ name = "Yufeng Xu" }]
 requires-python = ">=3.8"
 dependencies = [
     "click", 
-    "tabulate", 
-    "tqdm", 
-    "omegaconf", 
-    "hydra-core", 
     "fastapi",
-    "uvicorn",
+    "gcloud",
+    "google-cloud-bigquery",
+    "hydra-core", 
+    "omegaconf", 
     "pydantic",
     "streamlit"
-    "gcloud"
+    "tabulate", 
+    "tqdm", 
+    "uvicorn",
+    "yaspin"
 ]
 
 [project.scripts]

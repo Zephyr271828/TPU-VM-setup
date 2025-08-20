@@ -5,9 +5,9 @@ job:
 
 tpu:
   allocation_mode: "queued-resources"    # tpu-vm | queued-resources
-  accelerator: v6e-16
+  accelerator: v6e-4
   name: yufeng-${tpu.accelerator}
-  zone: us-east1-d
+  zone: europe-west4-a
   version: v2-alpha-tpuv6e
   pricing: spot                   
   # spot | ondemand | preemptible
@@ -19,7 +19,7 @@ tpu:
     purpose: "testing jobman"
 
 gcsfuse:
-  bucket_name: llm_pruning_us_east1_d
+  bucket_name: llm_pruning_europe_west4
   mount_path: /home/zephyr/gcs-bucket
 
 ssh:

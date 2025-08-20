@@ -89,7 +89,6 @@ class Job:
                     continue  # try again
 
                 self.logger.info(f"Job {self.id} finished successfully.")
-                return True
 
             except KeyboardInterrupt:
                 self.logger.warning("Job interrupted by user")
