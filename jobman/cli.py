@@ -3,6 +3,11 @@ import click
 
 from jobman.jobman import JobMan
 
+from jobman.profilers.billing_report import main as run_billing_report
+from jobman.profilers.quota_report import main as run_quota_report
+from jobman.profilers.storage_report import main as run_storage_report
+
+
 @click.group()
 def cli():
     """JobMan CLI: manage TPU jobs."""
@@ -42,4 +47,17 @@ def list_jobs():
     jm = JobMan()
     jm.list_jobs()
     
-    
+@cli.command()
+def billing():
+    """Run billing report profiler."""
+    run_billing_report()
+
+@cli.command()
+def quota():
+    """Run quota usage profiler."""
+    run_quota_report()
+
+@cli.command()
+def storage():
+    """Run storage usage profiler."""
+    run_storage_report()

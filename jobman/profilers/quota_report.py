@@ -75,7 +75,7 @@ def get_ip_usage():
             print(f"[ERROR] Failed to get IP quota for {region}: {e}")
     return results
 
-if __name__ == "__main__":
+def main():
     tpu_rows = []
     for zone, quota_dict in ZONAL_QUOTA.items():
         usage = get_tpu_usage_by_type(zone)
@@ -107,3 +107,6 @@ if __name__ == "__main__":
         headers=["Region", "Used", "Quota"],
         tablefmt="github"
     ))
+
+if __name__ == "__main__":
+    main()
