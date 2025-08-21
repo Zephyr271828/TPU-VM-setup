@@ -9,6 +9,8 @@ dependencies = [
     "click", 
     "fastapi",
     "gcloud",
+    "google-api-python-client", 
+    "google-auth",
     "google-cloud-bigquery",
     "hydra-core", 
     "omegaconf", 

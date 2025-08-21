@@ -211,7 +211,7 @@ class JobMan:
 
         rows.sort(key=lambda x: x[0])
         headers = ["Job ID", "Name", "Start Time", "Accelerator", "Zone", "Host0 IP", "Status"]
-        print(tabulate(rows, headers=headers, tablefmt="fancy_grid"))
+        print(tabulate(rows, headers=headers, tablefmt="github"))
             
     def fetch_job_info(self, meta):
         try:
