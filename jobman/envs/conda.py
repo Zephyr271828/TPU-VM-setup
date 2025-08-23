@@ -14,7 +14,7 @@ class CONDA(ENV):
         self.env_name = cfg.conda.name
         self.config_file = Path(cfg.conda.config_file)
 
-        self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
+        self.logger = setup_logger(log_file=Path(cfg.job.dir) / "logs" / "job.log")
 
     def setup(self):
         self.logger.info(f"Setting up Conda environment on TPU workers...")
@@ -39,11 +39,10 @@ class CONDA(ENV):
             return
         
         self.logger.info(f"Worker {i}: Setting up Conda...")
-        log_file = self.cfg.job.dir / "logs" / f"conda_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs" / f"conda_worker_{i}.log"
 
         remote_env_file = f"~/{self.config_file.name}"
 
-        log_file = self.cfg.job.dir / "logs" / f"conda_worker_{i}.log"
         with open(log_file, "w") as f:
             try:
                 # Step 1: scp env file to remote worker

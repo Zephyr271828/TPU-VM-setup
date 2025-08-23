@@ -33,7 +33,7 @@ def format_size(bytes_val):
 
 def main():
     buckets = list_buckets()
-    buckets = [b for b in buckets if b.startswith("llm_pruning")]
+    # buckets = [b for b in buckets if b.startswith("llm_pruning")]
     total_size = 0
 
     print(f"{'Bucket Name':<30} {'Size':>15}")

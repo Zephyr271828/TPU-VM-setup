@@ -12,7 +12,7 @@ class GCSFUSE:
         self.bucket = cfg.gcsfuse.bucket_name
         self.mount_path = cfg.gcsfuse.mount_path
 
-        self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
+        self.logger = setup_logger(log_file=Path(cfg.job.dir) / "logs" / "job.log")
         
     def setup(self):
         self.logger.info(f"Setting up GCSFuse and mounting bucket to TPU workers...")
@@ -41,7 +41,7 @@ class GCSFUSE:
             return
         
         self.logger.info(f"Worker {i}: Setting up GCSFuse...")
-        log_file = self.cfg.job.dir / "logs" / f"gcsfuse_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs" / f"gcsfuse_worker_{i}.log"
 
         gcsfuse_script = dedent(f"""
             set -e
@@ -101,7 +101,7 @@ class GCSFUSE:
 
     def _check_worker(self, i):
         self.logger.info(f"Worker {i}: Checking GCSFuse...")
-        log_file = self.cfg.job.dir / "logs" / f"gcsfuse_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs" / f"gcsfuse_worker_{i}.log"
         cmd = f"which gcsfuse && mount | grep {self.mount_path} && test -n \"$(ls -A {self.mount_path} 2>/dev/null)\""
         with open(log_file, "w") as f:
             try:

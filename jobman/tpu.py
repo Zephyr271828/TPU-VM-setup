@@ -206,9 +206,11 @@ class TPU:
                 "gcloud", "alpha", "compute", "tpus", "tpu-vm", "delete",
                 self.name, "--zone", self.zone, "--quiet"
             ]
-            if subprocess.run(cmd, check=True).returncode == 0:
+            try:
+                self.logger.debug(f"Running command: {' '.join(cmd)}")
+                subprocess.run(cmd, check=True)
                 self.logger.info("TPU VM deleted successfully.")
-            else:
+            except:
                 self.logger.info("No TPU VM to delete or deletion failed (possibly already gone).")
         else:
             self.logger.info("TPU VM not found. Skipping deletion.")
@@ -220,9 +222,11 @@ class TPU:
                     "gcloud", "compute", "tpus", "queued-resources", "delete",
                     self.name, "--zone", self.zone, "--quiet"
                 ]
-                if subprocess.run(cmd, check=True).returncode == 0:
+                try:
+                    self.logger.debug(f"Running command: {' '.join(cmd)}")
+                    subprocess.run(cmd, check=True)
                     self.logger.info("Queued resources deleted.")
-                else:
+                except:
                     self.logger.warning("No Queued resources to delete or deletion failed (possibly already gone).")
             else:
                 self.logger.info("Queued resources not found. Skipping deletion.")

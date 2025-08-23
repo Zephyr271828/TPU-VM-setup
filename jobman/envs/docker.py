@@ -17,7 +17,7 @@ class DOCKER(ENV):
         self.workdir = cfg.docker.get('work_dir', None)
         self.flags = cfg.docker.get('flags', None)
         
-        self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
+        self.logger = setup_logger(log_file=Path(cfg.job.dir) / "logs" / "job.log")
         
     def setup(self):
         self.logger.info(f"Setting up Docker on TPU workers...")
@@ -42,7 +42,7 @@ class DOCKER(ENV):
             return
         
         self.logger.info(f"Worker {i}: Setting up Docker...")
-        log_file = self.cfg.job.dir / "logs"  / f"docker_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs"  / f"docker_worker_{i}.log"
 
         with open(log_file, "w") as f:
             try:
@@ -77,7 +77,8 @@ class DOCKER(ENV):
             
     def _check_worker(self, i):
         self.logger.info(f"Worker {i}: Checking Docker image...")
-        log_file = self.cfg.job.dir / "logs" / f"docker_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs" / f"docker_worker_{i}.log"
+        
         with open(log_file, "w") as f:
             try:
                 check_cmd = [
@@ -121,7 +122,7 @@ class DOCKER(ENV):
         workdir_flag = f"-w {self.workdir}" if self.workdir else ""
         flags_str = " ".join(self.flags or [])
 
-        docker_cmd = f"docker run {flags_str} {var_flags_str} {volume_flags_str} {workdir_flag} {self.image} bash -c \"{cmd}\""
+        docker_cmd = f"sudo docker run {flags_str} {var_flags_str} {volume_flags_str} {workdir_flag} {self.image} bash -c \"{cmd}\""
 
         return docker_cmd
         

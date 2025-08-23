@@ -1,7 +1,7 @@
 job:
-  name: test-loop
+  name: pretrain-llama3-8b-200b
   env_type: docker
-  loop: false
+  loop: true
 
 tpu:
   allocation_mode: "queued-resources"    # tpu-vm | queued-resources
@@ -16,7 +16,7 @@ tpu:
   metadata:
     owner: "yufeng"
     # owner can be used to map tpus to user I think
-    purpose: "testing jobman"
+    purpose: "pretrain"
 
 gcsfuse:
   bucket_name: llm_pruning_us_central2_b
@@ -63,6 +63,26 @@ venv:
 
 command:
   cmd: |
-    cd /home/zephyr/gcs-bucket/lm-evaluation-harness
-    bash scripts/test_orbax_eval.sh
+    rm -rf /home/zephyr/maxtext
+
+    cp -r /home/zephyr/gcs-bucket/maxtext /home/zephyr/maxtext
+
+    mkdir -p /home/zephyr/maxtext/logs
+
+
+    gcloud config set project vision-mix
+
+    gcloud config set compute/zone ${tpu.zone}
+
+    export TPU_PREFIX=${tpu.name}
+
+    export BUCKET_NAME=${gcsfuse.bucket_name}
+
+    cd /home/zephyr/maxtext
+
+    bash pretrain/llama3_8b_L200.sh
+
+    # export HF_DATASETS_CACHE='/home/zephyr/gcs-bucket/datasets'
+    # cd /home/zephyr/gcs-bucket/lm-evaluation-harness
+    # bash scripts/test_orbax_eval.sh
   workers: [0] # int | list | "all"

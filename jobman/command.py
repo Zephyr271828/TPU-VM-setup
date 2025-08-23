@@ -15,7 +15,7 @@ class COMMAND:
         self.full_cmd = None
         self.workers = self.infer_workers() 
         
-        self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
+        self.logger = setup_logger(log_file=Path(cfg.job.dir) / "logs" / "job.log")
         
     def infer_workers(self):
         accelerator = self.cfg.tpu.accelerator
@@ -85,7 +85,7 @@ class COMMAND:
             "--quiet",
         ]
 
-        log_file = self.cfg.job.dir / "logs" / f"main_command_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs" / f"main_command_worker_{i}.log"
         with open(log_file, "a") as f:
             result = subprocess.run(ssh_cmd, stdout=f, stderr=f)
             if result.returncode != 0:

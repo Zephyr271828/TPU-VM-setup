@@ -15,7 +15,7 @@ class VENV(ENV):
         self.requirements_file = cfg.venv.requirements_file
         self.python = cfg.venv.get('python', 'python3.10')
         
-        self.logger = setup_logger(log_file=cfg.job.dir / "logs" / "job.log")
+        self.logger = setup_logger(log_file=Path(cfg.job.dir) / "logs" / "job.log")
         
     def setup(self):
         self.logger.info(f"Setting up Venv environment on TPU workers...")
@@ -40,7 +40,7 @@ class VENV(ENV):
             return
         
         self.logger.info(f"Worker {i}: Setting up VENV...")
-        log_file = self.cfg.job.dir / "logs" / f"venv_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs" / f"venv_worker_{i}.log"
         remote_venv_dir = f"~/venv/{self.env_name}"
         remote_req_file = f"~/requirements_{self.env_name}.txt"
         local_req_file = self.requirements_file

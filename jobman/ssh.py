@@ -14,7 +14,7 @@ class SSH:
         self.private_key = Path(self.cfg.ssh.private_key).expanduser()
         self.identities = self.cfg.ssh.identities
         
-        self.logger = setup_logger(log_file=cfg.job.dir / 'logs' / 'job.log')
+        self.logger = setup_logger(log_file=Path(cfg.job.dir) / 'logs' / 'job.log')
         
     def setup(self):
         self.logger.info(f"Copying SSH keys to TPU workers...")
@@ -35,7 +35,7 @@ class SSH:
         
     def _setup_worker(self, i):
         self.logger.info(f"Worker {i}: Setting up SSH")
-        log_file = self.cfg.job.dir / "logs" / f"ssh_worker_{i}.log"
+        log_file = Path(self.cfg.job.dir) / "logs" / f"ssh_worker_{i}.log"
         ssh_setup_cmds = [
             "mkdir -p ~/.ssh",
             "chmod 700 ~/.ssh"

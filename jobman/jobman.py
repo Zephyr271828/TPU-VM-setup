@@ -1,4 +1,5 @@
 import re
+import os
 import math
 import json
 import fcntl
@@ -63,18 +64,22 @@ class JobMan:
             
     def create_job(self, config_path):
         job_id = self.get_next_job_id()
-        job_dir = Path(f"jobs/{job_id}")
+        user = os.environ['USER']
+        job_dir = Path(f"jobs/{user}/{job_id}")
         job_dir.mkdir(parents=True, exist_ok=True)
         
         with self.with_meta_lock() as meta:
             meta[f"job_{job_id}"] = {
                 "job_id": job_id,
+                "user": user,
+                "job_dir": str(job_dir),
                 "created_at": datetime.now().isoformat()
             }
         
         cfg = OmegaConf.load(config_path)
         cfg.job.id = job_id
-        cfg.job.dir = job_dir
+        cfg.job.user = user
+        cfg.job.dir = str(job_dir)
         cfg.tpu.num_workers = infer_num_workers(cfg.tpu.accelerator)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         cfg.job.name = f"{cfg.job.name}_{ts}"
@@ -98,7 +103,9 @@ class JobMan:
             return f"{next_id:06d}"
     
     def start_job(self, job_id):
-        job_dir = jobs_dir / job_id
+        with self.with_meta_lock() as meta:
+            meta_data = meta.get(f"job_{job_id}")
+        job_dir = Path(meta_data.get("job_dir"))
         session_name = f"job_{job_id}"
         
         logs_dir = job_dir / "logs"
@@ -117,7 +124,6 @@ class JobMan:
             backend="tmux",
             session_name=session_name,
             started_at=datetime.now().isoformat(),
-            log_file=str(log_file)
         )
 
         self.logger.info(f"Job {job_id} started. See logs at {logs_dir}/job.log.")
@@ -174,7 +180,9 @@ class JobMan:
         except Exception as e:
             self.logger.warning(f"Failed to cancel job {job_id} before deletion: {e}")
 
-        job_dir = jobs_dir / job_id
+        with self.with_meta_lock() as meta:
+            meta_data = meta.get(f"job_{job_id}")
+        job_dir = Path(meta_data.get("job_dir"))
         config_path = job_dir / "config.yaml"
         if config_path.exists():
             try:
@@ -210,17 +218,18 @@ class JobMan:
                     rows.append(future.result())
 
         rows.sort(key=lambda x: x[0])
-        headers = ["Job ID", "Name", "Start Time", "Accelerator", "Zone", "Host0 IP", "Status"]
+        headers = ["Job ID", "User", "Name", "Accelerator", "Zone", "Host0 IP", "Status"]
         print(tabulate(rows, headers=headers, tablefmt="github"))
             
     def fetch_job_info(self, meta):
         try:
             job_id = meta.get("job_id")
-             
-            started = meta.get("started_at", meta.get("created_at", "N/A"))
+            user = meta.get("user")
+            
+            # started = meta.get("started_at", meta.get("created_at", "N/A"))
             session_name = meta.get("session_name", f"job_{job_id}")
 
-            config_path = Path(f"jobs/{job_id}/config.yaml")
+            config_path = Path(meta.get("job_dir")) / "config.yaml"
             if config_path.exists():
                 cfg = OmegaConf.load(config_path)
                 job_name = cfg.job.name
@@ -252,7 +261,7 @@ class JobMan:
             else:
                 status = "UNKNOWN"
 
-            return [job_id, job_name, started, accelerator, zone, host0_ip, status]
+            return [job_id, user, job_name, accelerator, zone, host0_ip, status]
         except Exception as e:
             return [job_id, "ERROR", "ERROR", "ERROR", "ERROR", "ERROR", f"ERROR: {e}"]
         

@@ -15,7 +15,7 @@ dependencies = [
     "hydra-core", 
     "omegaconf", 
     "pydantic",
-    "streamlit"
+    "streamlit",
     "tabulate", 
     "tqdm", 
     "uvicorn",

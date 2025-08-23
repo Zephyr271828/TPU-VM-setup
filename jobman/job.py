@@ -4,6 +4,7 @@ import time
 import logging
 import argparse
 import subprocess
+from pathlib import Path
 from omegaconf import OmegaConf
 
 from jobman.tpu import TPU
@@ -42,7 +43,7 @@ class Job:
         else:
             raise ValueError(f"Invalid env type {env_type}")
         
-        self.log_file = self.dir / 'logs' / 'job.log'
+        self.log_file = Path(self.dir) / 'logs' / 'job.log'
         self.logger = setup_logger(log_file=self.log_file)
 
     def request(self):
@@ -53,7 +54,7 @@ class Job:
             return False
         
         self.cfg.tpu.ips = self.tpu.get_ips()
-        OmegaConf.save(cfg, self.dir / "config.yaml")
+        OmegaConf.save(cfg, Path(self.dir) / "config.yaml")
         return True
 
     def setup(self):
@@ -74,7 +75,9 @@ class Job:
         while True:
             try:
                 if not self.request():
-                    return False
+                    if not self.loop:
+                        return False
+                    continue
 
                 if not self.setup():
                     self.logger.error(f"Job {self.id} setup failed.")
@@ -124,7 +127,8 @@ if __name__ == '__main__':
     parser.add_argument('--cmd-only', action='store_true', help='Run the main command only')
     args = parser.parse_args()
 
-    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
+    user = os.environ["USER"]
+    cfg = OmegaConf.load(f"jobs/{user}/{args.job_id}/config.yaml")
     job = Job(cfg)
 
     if args.cmd_only:
