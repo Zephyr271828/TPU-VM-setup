@@ -1,9 +1,7 @@
-import argparse
 import subprocess
 import concurrent.futures
 from pathlib import Path
 from textwrap import dedent
-from omegaconf import OmegaConf
 from jobman.utils import setup_logger
 
 class GCSFUSE:
@@ -123,13 +121,4 @@ class GCSFUSE:
             except subprocess.CalledProcessError as e:
                 # self.logger.error(f"Worker {i}: Error checking GCSFuse: {e}")
                 return False
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job_id")
-    args = parser.parse_args()
     
-    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
-    gcsfuse = GCSFUSE(cfg)
-    
-    gcsfuse.setup()

@@ -2,7 +2,6 @@ import os
 import json
 import time
 import logging
-import argparse
 import subprocess
 from pathlib import Path
 from omegaconf import OmegaConf
@@ -47,6 +46,11 @@ class Job:
         self.logger = setup_logger(log_file=self.log_file)
 
     def request(self):
+        self.logger.info("Checking TPU status...")
+        ready = self.tpu.check_and_maybe_delete()
+        if ready:
+            return True
+         
         self.logger.info("Requesting TPU...")
         success = self.tpu.request()
         if not success:
@@ -120,21 +124,6 @@ class Job:
         #         self.logger.info(f"Deleted log file: {self.log_file}")
         #     except Exception as e:
         #         self.logger.warning(f"Failed to delete log file: {e}")
-    
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job_id")
-    parser.add_argument('--cmd-only', action='store_true', help='Run the main command only')
-    args = parser.parse_args()
-
-    user = os.environ["USER"]
-    cfg = OmegaConf.load(f"jobs/{user}/{args.job_id}/config.yaml")
-    job = Job(cfg)
-
-    if args.cmd_only:
-        job.execute()
-    else:
-        job.run()
 
 
         

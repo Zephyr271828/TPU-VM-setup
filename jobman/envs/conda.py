@@ -92,13 +92,3 @@ class CONDA(ENV):
 
     def patch_command(self, cmd):
         return f'conda run -n {self.env_name} bash -c "{cmd}"'
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job_id")
-    args = parser.parse_args()
-
-    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
-    conda = CONDA(cfg)
-
-    conda.setup()

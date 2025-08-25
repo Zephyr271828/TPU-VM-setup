@@ -1,8 +1,6 @@
-import argparse
 import subprocess
 import concurrent.futures
 from pathlib import Path
-from omegaconf import OmegaConf
 
 from jobman.envs.base import ENV
 from jobman.utils import setup_logger
@@ -73,7 +71,7 @@ class DOCKER(ENV):
                 subprocess.run(cmd2, check=True, stdout=f, stderr=f)
             except Exception as e:
                 self.logger.error(f"Worker {i} setup failed: {e}")
-                raise
+                raise        
             
     def _check_worker(self, i):
         self.logger.info(f"Worker {i}: Checking Docker image...")
@@ -126,13 +124,3 @@ class DOCKER(ENV):
 
         return docker_cmd
         
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job_id")
-    args = parser.parse_args()
-    
-    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
-    docker = DOCKER(cfg)
-    
-    # docker.setup()
-    print(docker.patch_command(cfg.command.cmd))

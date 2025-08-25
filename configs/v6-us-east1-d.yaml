@@ -63,8 +63,8 @@ venv:
 
 command:
   cmd: |
-    # pip show jax
-    # pip show flax
+    pip show jax
+    pip show flax
 
     # rm -rf /home/zephyr/maxtext
     # cp -r /home/zephyr/gcs-bucket/maxtext /home/zephyr/maxtext

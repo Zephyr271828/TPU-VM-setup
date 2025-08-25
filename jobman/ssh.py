@@ -1,9 +1,9 @@
-import argparse
+import os
 import subprocess
 import concurrent.futures
 from pathlib import Path
 from textwrap import dedent
-from omegaconf import OmegaConf
+
 from jobman.utils import setup_logger
 
 class SSH:
@@ -65,7 +65,7 @@ class SSH:
             if combined_config:
                 escaped_config = combined_config.strip().replace('"', '\\"').replace('\n', '\\n')
                 ssh_setup_cmds += [
-                    f'printf "{escaped_config}\\n" > ~/.ssh/config',
+                    f'sudo printf "{escaped_config}\\n" > ~/.ssh/config',
                     'chmod 600 ~/.ssh/config'
                 ]
 
@@ -112,12 +112,4 @@ class SSH:
     def _check_worker(self, i):
         raise NotImplementedError
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job_id")
-    args = parser.parse_args()
-    
-    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
-    ssh = SSH(cfg)
-    
-    ssh.setup()
+

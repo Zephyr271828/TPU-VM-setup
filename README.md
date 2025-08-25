@@ -7,19 +7,10 @@ JOBMAN is a modular and extensible job management system for TPU VMs. JOBMAN-V2 
 pip install -e .
 ```
 
-## TLDR?
-Try the following for quick start!
-```
-jobman create configs/quick-start.yaml
-```
-### Basic Commands
-| Purpose | Command |
-|:--:|:--:|
-| Create a new job | `jobman create <config_path>` |
-| Check all jobs status | `jobman list` |
-| Cancel and delete a specific job | `jobman delete <job_id>` |
-| Run setup on a specific job | e.g: `python -m jobman.envs.docker <job_id>` |
-| Run command on a specific job | e.g: `python -m jobman.job <job_id> --cmd-only` |
+## Get Started 
+Before you start using JOBMAN, be sure to go through [GET_STARTED.md](GET_STARTED.md). This is vital for you to proceed to run your own jobs.
+
+
 
 ## Overall Structure
 JOBMAN treats each job instance as a directory in `jobs/<job_id>`. During the creation of the job, information including IP addresses, config snapshot, start time and life cycle will be saved to this directory. TPU request logs, setup logs, and main command logs will be available at `jobs/<job_id>/logs`. For instance, you can find host 0 gcsfuse setup log at `jobs/<job_id>/logs/gcsfuse_worker_0.log`. 

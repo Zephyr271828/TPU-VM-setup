@@ -1,11 +1,9 @@
 import time
 import json
 import logging
-import argparse
 import subprocess
 from pathlib import Path
 from datetime import datetime
-from omegaconf import OmegaConf
 
 from jobman.utils import setup_logger
 
@@ -65,9 +63,8 @@ class TPU:
             self.logger.error(f"Error checking queued TPU status: {e}")
             return "UNKNOWN"
         
-    def request(self):
+    def check_and_maybe_delete(self):
         assert self.mode in {"tpu-vm", "queued-resources"}
-        
         status = self._check_tpu_vm_status()
         if status in {"READY", "ACTIVE"}:
             return True
@@ -86,7 +83,11 @@ class TPU:
         else:
             self.logger.error(f"Unexpected TPU status: {status}. Deleting as precaution.")
             self.delete()
-
+        
+        return False
+        
+    def request(self):
+        
         base_cmd = [
             "gcloud", "alpha" if self.mode == "tpu-vm" else "", "compute", "tpus",
             "tpu-vm" if self.mode == "tpu-vm" else "queued-resources",
@@ -231,13 +232,4 @@ class TPU:
             else:
                 self.logger.info("Queued resources not found. Skipping deletion.")
             
-    
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job_id")
-    args = parser.parse_args()
-    
-    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
-    tpu = TPU(cfg)
-    
-    print(json.dumps(tpu.get_ips(), indent=2))
+

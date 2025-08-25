@@ -1,8 +1,6 @@
-import argparse
 import subprocess
 import concurrent.futures
 from pathlib import Path
-from omegaconf import OmegaConf
 
 from jobman.envs.base import ENV
 from jobman.utils import setup_logger
@@ -62,6 +60,7 @@ class VENV(ENV):
                 # Step 2: Create virtualenv and install requirements
                 remote_cmd = f"""
                     sudo apt install {self.python}-venv -y
+                    mkdir -p ~/venv
                     {self.python} -m venv {remote_venv_dir} || true && \
                     source {remote_venv_dir}/bin/activate && \
                     pip install --upgrade pip && \
@@ -80,7 +79,10 @@ class VENV(ENV):
             except Exception as e:
                 self.logger.error(f"Worker {i} venv setup failed: {e}")
                 raise
-            
+      
+    def check(self):
+        pass      
+        
     def _check_worker(self, i):
         self.logger.info(f"Worker {i}: Checking VENV setup...")
         # Implement the logic to check if the VENV is set up correctly
@@ -88,14 +90,4 @@ class VENV(ENV):
 
     def patch_command(self, cmd):
         return f'bash -c "source {self.path}/bin/activate && {cmd}"'
-        
     
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("job_id")
-    args = parser.parse_args()
-
-    cfg = OmegaConf.load(f"jobs/{args.job_id}/config.yaml")
-    venv = VENV(cfg)
-
-    venv.setup()

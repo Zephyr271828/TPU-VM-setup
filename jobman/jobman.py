@@ -103,6 +103,7 @@ class JobMan:
             return f"{next_id:06d}"
     
     def start_job(self, job_id):
+        
         with self.with_meta_lock() as meta:
             meta_data = meta.get(f"job_{job_id}")
         job_dir = Path(meta_data.get("job_dir"))
