@@ -1,95 +1,27 @@
-# JOBMAN-V2
+<h1 align="center">Jobman-v2</h1>
 
 <p align="center">
-  <img src="figs/jobman_logo.png" alt="Jobman Logo" width="400"/>
+  <img src="figs/jobman_logo.png" alt="Jobman Logo" width="512"/>
 </p>
 
-JOBMAN is a modular and extensible job management system for TPU VMs. JOBMAN-V2 is different from V1 because most of the implementations are now in Python instead of shell to enable more complex logics, modularity, and readability.
+Jobman-v2 is a modular and extensible job management system for TPU VMs. 
 
 ## Installation
 ```bash
+python -m pip install --upgrade pip
 pip install -e .
 ```
 
 ## Get Started 
-Before you start using JOBMAN, be sure to go through [GET_STARTED.md](GET_STARTED.md). This is vital for you to proceed to run your own jobs.
-
-
+Before you start using Jobman, be sure to go through [GET_STARTED.md](GET_STARTED.md). This is vital for you to proceed to run your own jobs.
 
 ## Overall Structure
-JOBMAN treats each job instance as a directory in `jobs/<job_id>`. During the creation of the job, information including IP addresses, config snapshot, start time and life cycle will be saved to this directory. TPU request logs, setup logs, and main command logs will be available at `jobs/<job_id>/logs`. For instance, you can find host 0 gcsfuse setup log at `jobs/<job_id>/logs/gcsfuse_worker_0.log`. 
-
-## Creation
-You have 2 options when requesting TPU resources: tpu-vm or queued-resources. Below is an example of how you can configure the TPU you want:
-```yaml
-tpu:
-  allocation_mode: "queued-resources"    # tpu-vm | queued-resources
-  accelerator: v6e-1
-  name: yufeng-${tpu.accelerator}
-  zone: us-east1-d
-  version: v2-alpha-tpuv6e
-  pricing: spot                   
-  # spot | ondemand | preemptible
-  startup_script: null
-  tags: ["jobman", "experiment"]
-  metadata:
-    owner: "yufeng"
-    # owner can be used to map tpus to user I think
-    purpose: "testing jobman"
-```
-
-## Setup Modules
-It's strongly suggested that you configure `ssh` and `gcsfuse` before starting running jobs. The former enables convenient connection between TPU hosts, whereas the latter mounts your bucket to the TPU host.
-
-### SSH & GCSFUSE
-SSH  
-```yaml
-ssh:
-  private_key: /u/yx1168/.ssh/id_rsa
-  public_key: /u/yx1168/.ssh/id_rsa.pub
-```
-GCSFUSE
-```yaml
-gcsfuse:
-  bucket_name: llm_pruning_us_east1_d
-  mount_path: /home/zephyr/gcs-bucket
-```
-
-### Environment Setup
-Jobman enables 3 types of env setup: docker, conda, and venv. You should choose 1 from the 3 with `job.env_type`. For example, for docker you may configure as follows:
-```yaml
-job:
-  env_type: docker
-docker:
-  image: yx3038/maxtext_base_image:latest
-  mount_dirs:
-    - /home/zephyr
-    - /dev
-    - /run
-  workdir: /home/zephyr
-  flags: ["--privileged", "--network=host"]
-```
-
-## Run your job
-You can simply configure your job and jobman automatically starts the corresponding env before running it. For example, you can set your job:
-```yaml
-command:
-  run: |
-    pip show jax
-    pip show flax
-  workers: [0] # int | list | "all"
-```
-Assume your environment type is docker, then the command will be:
-```python
-remote_cmd = f"""
-    docker run {flags} {volume_flags} {workdir_flag} {image} bash -c "{user_command}"
-    """
-```
+Coming Soon!
 
 ## Other Resources
 
 ### Simoler TPU request tool
-The design concept of JOBMAN is somewhat complex, but it aims to provide the easiest user interface s.t. user unfamiliar with TPU can quickly get started.  
+The design concept of Jobman is somewhat complex, but it aims to provide the easiest user interface s.t. user unfamiliar with TPU can quickly get started.  
 For a simpler setup tool, you may refer to `other_resources/ultra_create_tpu.sh` by Peter Tong.
 
 ### Slack Chatbot
@@ -102,4 +34,6 @@ Coming soon
 Coming soon
 
 ## Contributions & Feedback
-If you have any issues with this project or want to contribute to it, please first open an issue in the `Issues` section. This will be of great help to the maintenance of this project!
+If you have any issues with this project or want to contribute to it, please first open an issue in the `Issues` section. This will be of great help to the maintenance of this project!  
+Also, if you would like to contribute to this project, please refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+
