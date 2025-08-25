@@ -100,7 +100,7 @@ class GCSFUSE:
     def _check_worker(self, i):
         self.logger.info(f"Worker {i}: Checking GCSFuse...")
         log_file = Path(self.cfg.job.dir) / "logs" / f"gcsfuse_worker_{i}.log"
-        cmd = f"which gcsfuse && mount | grep {self.mount_path} && test -n \"$(ls -A {self.mount_path} 2>/dev/null)\""
+        cmd = f"which gcsfuse && mount | grep {self.mount_path} && test -n \"$(sudo ls -A {self.mount_path} 2>/dev/null)\""
         with open(log_file, "w") as f:
             try:
                 check_cmd = [

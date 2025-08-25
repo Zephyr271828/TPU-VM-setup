@@ -284,6 +284,12 @@ Below are the most common cli commands you may find useful in jobman.
 | Cancel and delete a specific job | `jobman delete <job_id>` |
 
 ### Debugging Commands
-| Run docker setup job | e.g: `python -m jobman.envs.docker <job_id>` |
-| Run docker setup job | e.g: `python -m jobman.envs.docker <job_id>` |
-| Run command on a specific job | e.g: `python -m jobman.job <job_id> --cmd-only` |
+| Purpose | Command |
+|:--:|:--:|
+| Request TPU for job id | e.g: `jobman tpu <job_id>` |
+| Set up ssh for job id | e.g: `jobman ssh <job_id>` |
+| Set up gcsfuse for job id | e.g: `jobman gcsfuse <job_id>` |
+| Set up docker for job id | e.g: `jobman docker <job_id>` |
+| Set up conda for job id | e.g: `jobman conda <job_id>` |
+| Set up venv for job id | e.g: `jobman venv <job_id>` |
+| Run command only for job id | e.g: `jobman run <job_id> --cmd-only` |

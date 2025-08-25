@@ -27,6 +27,7 @@ def get_cfg(job_id):
     job_dir = job_meta['job_dir']
     config_path = Path(job_dir) / 'config.yaml'
     cfg = OmegaConf.load(config_path)
+    print(f"see logs at {job_dir}/logs/job.log")
     
     return cfg
         
@@ -87,10 +88,9 @@ def storage():
 @cli.command("run")
 @click.argument("job_id")
 @click.option("--cmd-only", is_flag=True, help="Run the main command only")
-def run_cmd(job_id, cmd_only):
+def run(job_id, cmd_only):
     """Run a job by job_id using job.py's argparse main."""
     from jobman.job import Job
-    
     cfg = get_cfg(job_id)
     job = Job(cfg)
     if cmd_only:
