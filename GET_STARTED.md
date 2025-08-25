@@ -74,7 +74,7 @@ flowchart TB
 
 # Jobman Configuration Guide
 
-This guide explains each part of the configuration file and how to customize it for your own TPU jobs.
+This guide explains each part of the configuration file and how to customize it for your own TPU jobs. You may build upon [configs/template.yaml](configs/template.yaml) to create your own config.
 
 ---
 
