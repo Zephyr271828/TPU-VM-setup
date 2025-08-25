@@ -4,6 +4,20 @@ This is the doc for you to understand the basics about TPUs and create your firs
 
 ## Table of Contents
 
+- [TPU Basics](#tpu-basics)
+- [Configuration](#configuration)
+  - [job](#job)
+  - [tpu](#tpu)
+  - [gcsfuse](#gcsfuse)
+  - [ssh](#ssh)
+  - [docker](#docker)
+  - [conda](#conda)
+  - [venv](#venv)
+  - [command](#command)
+- [Minimal Checklist Before You Run](#minimal-checklist-before-you-run)
+- [Commands Mannual](#commands-mannual)
+  - [Basic Commands](#basic-commands)
+  - [Debugging Commands](#debugging-commands)
 
 ## TPU Basics
 Before start working with Jobman, let's go through some basics concepts in TPU:

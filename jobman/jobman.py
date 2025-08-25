@@ -243,23 +243,23 @@ class JobMan:
             else:
                 job_name = accelerator = zone = host0_ip = "N/A"
                 cfg = None
-
-            if self.check_tmux_session(session_name):
-                status = "QUEUEING" if host0_ip == "N/A" else "RUNNING"
-            elif cfg:
-                try:
-                    result = subprocess.run(
-                        [
-                            "gcloud", "alpha", "compute", "tpus", "tpu-vm", "describe",
-                            cfg.tpu.name, "--zone", cfg.tpu.zone, "--format=value(state)"
-                        ],
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-                    )
-                    gcloud_state = result.stdout.strip()
+            
+            try:
+                gcloud_state = subprocess.run(
+                    [
+                        "gcloud", "alpha", "compute", "tpus", "tpu-vm", "describe",
+                        cfg.tpu.name, "--zone", cfg.tpu.zone, "--format=value(state)"
+                    ],
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+                )
+                gcloud_state = gcloud_state.stdout.strip()
+                if self.check_tmux_session(session_name):
+                    status = "RUNNING" if gcloud_state in {"READY", "ACTIVE"} else "QUEUEING"
+                elif cfg:
                     status = "IDLE" if gcloud_state in {"READY", "ACTIVE"} else "DEAD"
-                except Exception:
+                else:
                     status = "UNKNOWN"
-            else:
+            except:
                 status = "UNKNOWN"
 
             return [job_id, user, job_name, accelerator, zone, host0_ip, status]
