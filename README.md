@@ -1,5 +1,9 @@
 # JOBMAN-V2
 
+<p align="center">
+  <img src="figs/jobman_logo.png" alt="Jobman Logo" width="400"/>
+</p>
+
 JOBMAN is a modular and extensible job management system for TPU VMs. JOBMAN-V2 is different from V1 because most of the implementations are now in Python instead of shell to enable more complex logics, modularity, and readability.
 
 ## Installation

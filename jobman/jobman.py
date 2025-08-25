@@ -114,7 +114,7 @@ class JobMan:
         log_file = logs_dir / "job.log"
         
         config_path = job_dir / "config.yaml"
-        run_cmd = f"python -m jobman.job {job_id}"
+        run_cmd = f"jobman run {job_id}"
 
         tmux_cmd = f'tmux new-session -d -s {session_name} "{run_cmd} | tee -a {log_file}"'
         subprocess.run(tmux_cmd, shell=True, check=True)
